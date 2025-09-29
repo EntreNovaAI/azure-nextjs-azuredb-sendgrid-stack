@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
+import axios from 'axios'
 
 // User type definition for the profile page
 interface User {
@@ -73,31 +74,23 @@ export function ProfileClient({ user }: ProfileClientProps) {
     setUnsubscribeStatus(null)
 
     try {
-      // Call the unsubscribe API endpoint
-      const response = await fetch('/api/stripe/unsubscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          stripeCustomerId: user.stripeCustomerId
-        })
+      // Call the unsubscribe API endpoint using axios
+      const response = await axios.post('/api/stripe/unsubscribe', {
+        stripeCustomerId: user.stripeCustomerId
       })
 
-      const data = await response.json()
-
-      if (response.ok) {
-        setUnsubscribeStatus('Successfully unsubscribed! Your subscription will end at the end of the current billing period.')
-        // Refresh the page to show updated user data
-        setTimeout(() => {
-          router.refresh()
-        }, 2000)
-      } else {
-        setUnsubscribeStatus(data.error || 'Failed to unsubscribe. Please try again.')
-      }
+      setUnsubscribeStatus('Successfully unsubscribed! Your subscription will end at the end of the current billing period.')
+      // Refresh the page to show updated user data
+      setTimeout(() => {
+        router.refresh()
+      }, 2000)
     } catch (error) {
       console.error('Error unsubscribing:', error)
-      setUnsubscribeStatus('An error occurred while unsubscribing. Please try again.')
+      if (axios.isAxiosError(error) && error.response) {
+        setUnsubscribeStatus(error.response.data.error || 'Failed to unsubscribe. Please try again.')
+      } else {
+        setUnsubscribeStatus('An error occurred while unsubscribing. Please try again.')
+      }
     } finally {
       setIsUnsubscribing(false)
     }
