@@ -1,7 +1,9 @@
 import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
+import CredentialsProvider from "next-auth/providers/credentials"
 import { NextAuthOptions } from "next-auth"
-import { getUserByEmail, updateUserById, createUser } from "@/app/_lib/kysely/repositories/user-repo"
+import { getUserByEmail, updateUserById, createUser, getUserByEmailWithPassword } from "@/app/_lib/kysely/repositories/user-repo"
+import { verifyPassword } from "@/app/_lib/auth/password-utils"
 
 // Export auth options for use in other API routes
 export const authOptions: NextAuthOptions = {
@@ -12,6 +14,63 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? ""
+    }),
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {
+        email: { 
+          label: "Email", 
+          type: "email", 
+          placeholder: "your@email.com" 
+        },
+        password: { 
+          label: "Password", 
+          type: "password" 
+        }
+      },
+      async authorize(credentials) {
+        // Validate input
+        if (!credentials?.email || !credentials?.password) {
+          console.log('Missing credentials')
+          return null
+        }
+
+        try {
+          // Get user with password hash from database
+          const user = await getUserByEmailWithPassword(credentials.email)
+          
+          if (!user) {
+            console.log('User not found:', credentials.email)
+            return null
+          }
+
+          // Check if user has a password (might be OAuth-only user)
+          if (!user.password) {
+            console.log('User has no password set:', credentials.email)
+            return null
+          }
+
+          // Verify password
+          const isValidPassword = await verifyPassword(credentials.password, user.password)
+          
+          if (!isValidPassword) {
+            console.log('Invalid password for user:', credentials.email)
+            return null
+          }
+
+          // Return user object for session (without password)
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+            accessLevel: user.accessLevel
+          }
+        } catch (error) {
+          console.error('Error during authentication:', error)
+          return null
+        }
+      }
     })
   ],
   secret: process.env.NEXTAUTH_SECRET,
@@ -53,6 +112,7 @@ export const authOptions: NextAuthOptions = {
     // Handle user creation and ensure access level is set
     async signIn({ user, account, profile }) {
       try {
+        // Handle Google OAuth sign-in
         if (account?.provider === 'google' && user?.email) {
           // Check if user exists and has access level
           const existingUser = await getUserByEmail(user.email)
@@ -71,6 +131,14 @@ export const authOptions: NextAuthOptions = {
               accessLevel: 'free'
             } as any)
           }
+        }
+        
+        // Handle credentials sign-in (vanilla login)
+        // For credentials provider, user is already validated in authorize()
+        // No additional database operations needed here
+        if (account?.provider === 'credentials') {
+          // User is already authenticated and validated
+          return true
         }
       } catch (error) {
         console.error('Error in signIn callback:', error)

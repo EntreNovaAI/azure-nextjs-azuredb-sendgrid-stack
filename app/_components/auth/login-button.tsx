@@ -1,11 +1,11 @@
 'use client'
 
-import { signIn, signOut, useSession } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 
 /**
- * Login Button Component
+ * Simple Login Button Component
  * Shows login/logout buttons based on authentication state
- * Uses Google OAuth provider for authentication
+ * Directs users to dedicated sign-up page for authentication options
  */
 export function LoginButton() {
   const { data: session, status } = useSession()
@@ -36,13 +36,13 @@ export function LoginButton() {
     )
   }
 
-  // Show login button if user is not authenticated
+  // Show simple sign up button if user is not authenticated
   return (
     <button 
       className="auth-button login" 
-      onClick={() => signIn('google')}
+      onClick={() => window.location.href = '/auth/signup'}
     >
-      Sign In with Google
+      Sign Up / Sign In
     </button>
   )
 }

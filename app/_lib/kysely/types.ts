@@ -1,6 +1,6 @@
-// Kysely table and database types mirroring prisma/schema.prisma
+// Kysely table and database types for Azure SQL (MSSQL)
 // We target Azure SQL (MSSQL) via Kysely's Mssql dialect.
-// Keep these in sync with your Prisma models if you continue to use Prisma for migrations.
+// These types define the database schema used by the application.
 
 import {
   ColumnType,
@@ -20,6 +20,7 @@ export interface UserTable {
   email: string | null
   emailVerified: Date | null
   image: string | null
+  password: string | null // Bcrypt hashed password for vanilla login
   accessLevel: string // 'free' | 'basic' | 'premium' in app logic; keep as string in DB
   stripeCustomerId: string | null
   // On select: Date; on insert: optional Date or string; on update: never (server default)

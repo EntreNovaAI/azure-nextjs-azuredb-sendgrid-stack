@@ -6,7 +6,7 @@ import { db } from '@/app/_lib/kysely'
 
 /**
  * Create the dbo.[User] table if it doesn't exist.
- * Mirrors the essential fields from prisma/schema.prisma for User.
+ * Defines the essential User table structure for the application.
  */
 export async function ensureUserTable(): Promise<void> {
   // Create table if missing

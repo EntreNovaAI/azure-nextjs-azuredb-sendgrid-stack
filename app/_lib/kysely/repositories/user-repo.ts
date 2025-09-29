@@ -1,6 +1,7 @@
 import { db } from '@/app/_lib/kysely'
 import type { NewUser, User, UserUpdate } from '@/app/_lib/kysely/types'
 import { createId } from '@paralleldrive/cuid2'
+import { hashPassword } from '@/app/_lib/auth/password-utils'
 
 // Common projection used across routes
 const userSelect = [
@@ -132,6 +133,99 @@ export async function setAccessLevelById(userId: string, accessLevel: string): P
     .set({ accessLevel, updatedAt: new Date() })
     .where('id', '=', userId)
     .execute()
+}
+
+/**
+ * Create a user with email and password for vanilla login
+ * @param email - User's email address
+ * @param password - Plain text password (will be hashed)
+ * @param name - Optional user name
+ * @returns Promise<User> - The created user (without password field)
+ */
+export async function createUserWithPassword(
+  email: string, 
+  password: string, 
+  name?: string
+): Promise<Pick<User, typeof userSelect[number]>> {
+  // Hash the password before storing
+  const hashedPassword = await hashPassword(password)
+  
+  const now = new Date()
+  const id = createId()
+  
+  // Insert user with hashed password
+  await db
+    .insertInto('User')
+    .values({
+      id,
+      email,
+      name: name || null,
+      password: hashedPassword,
+      accessLevel: 'free',
+      createdAt: now,
+      updatedAt: now,
+    } as any)
+    .execute()
+
+  // Return user without password field for security
+  const user = await db
+    .selectFrom('User')
+    .select(userSelect as unknown as any)
+    .where('id', '=', id)
+    .executeTakeFirst()
+
+  if (!user) {
+    throw new Error('Failed to create user')
+  }
+
+  return user as any
+}
+
+/**
+ * Get user by email including password hash for authentication
+ * WARNING: Only use this for authentication - never return password to client
+ * @param email - User's email address
+ * @returns Promise<User | null> - User with password hash or null
+ */
+export async function getUserByEmailWithPassword(email: string): Promise<(User & { password: string | null }) | null> {
+  const row = await db
+    .selectFrom('User')
+    .selectAll()
+    .where('email', '=', email)
+    .executeTakeFirst()
+
+  return row as any ?? null
+}
+
+/**
+ * Update user's password
+ * @param userId - User's ID
+ * @param newPassword - New plain text password (will be hashed)
+ * @returns Promise<void>
+ */
+export async function updateUserPassword(userId: string, newPassword: string): Promise<void> {
+  const hashedPassword = await hashPassword(newPassword)
+  
+  await db
+    .updateTable('User')
+    .set({ password: hashedPassword, updatedAt: new Date() })
+    .where('id', '=', userId)
+    .execute()
+}
+
+/**
+ * Check if user has a password set (for vanilla login)
+ * @param email - User's email address
+ * @returns Promise<boolean> - True if user has password, false otherwise
+ */
+export async function userHasPassword(email: string): Promise<boolean> {
+  const user = await db
+    .selectFrom('User')
+    .select(['password'])
+    .where('email', '=', email)
+    .executeTakeFirst()
+
+  return !!(user?.password)
 }
 
 
