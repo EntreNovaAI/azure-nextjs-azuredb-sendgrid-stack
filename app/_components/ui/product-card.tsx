@@ -30,7 +30,18 @@ export function ProductCard({
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
   
-  const cardClass = `product-card ${variant !== 'default' ? variant : ''}`
+  // Modern glass-morphism card design with gradient borders
+  const baseCard = 'bg-slate-800/50 backdrop-blur-xl p-8 rounded-2xl border-2 transition-all hover:scale-[1.02] hover:shadow-2xl flex flex-col h-full relative overflow-hidden'
+  
+  // Different glow effects and borders for each variant - warm sunset colors
+  const variantStyles = 
+    variant === 'premium' 
+      ? 'border-orange-500/50 shadow-orange-500/20 hover:shadow-orange-500/40' 
+      : variant === 'basic' 
+      ? 'border-pink-500/50 shadow-pink-500/20 hover:shadow-pink-500/40' 
+      : 'border-slate-600/50 shadow-slate-500/20'
+  
+  const cardClass = `${baseCard} ${variantStyles}`
   const isFree = price === 'Free'
   
   // Handle purchase button click
@@ -63,26 +74,62 @@ export function ProductCard({
   
   return (
     <div className={cardClass}>
-      <div className="product-card-header">
-        <h3>{title}</h3>
-        <p>{description}</p>
+      {/* Gradient overlay for premium effect - warm sunset colors */}
+      {variant === 'premium' && (
+        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/20 rounded-full blur-3xl"></div>
+      )}
+      {variant === 'basic' && (
+        <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/20 rounded-full blur-3xl"></div>
+      )}
+      
+      {/* Premium badge */}
+      {variant === 'premium' && (
+        <div className="absolute top-4 right-4 bg-gradient-to-r from-orange-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+          POPULAR
+        </div>
+      )}
+      
+      {/* Card header with title and description */}
+      <div className="mb-6 relative z-10">
+        <h3 className="text-2xl font-bold text-white mb-3 flex items-center gap-2">
+          {variant === 'premium' && '📱'}
+          {variant === 'basic' && '⭐'}
+          {variant === 'default' && '🚀'}
+          {title}
+        </h3>
+        <p className="text-slate-300 leading-relaxed">{description}</p>
       </div>
       
-      <div className="product-features">
-        <ul>
+      {/* Features list - grows to fill available space */}
+      <div className="flex-grow mb-6 relative z-10">
+        <ul className="space-y-3">
           {features.map((feature, index) => (
-            <li key={index}>✅ {feature}</li>
+            <li key={index} className="flex items-start text-slate-300">
+              <span className="text-green-400 mr-3 mt-0.5 text-lg">✅</span>
+              <span>{feature}</span>
+            </li>
           ))}
         </ul>
       </div>
       
-      <div className="product-footer">
-        <div className="product-price">{price}</div>
+      {/* Price and CTA button - stays at bottom */}
+      <div className="mt-auto pt-6 border-t border-slate-700/50 relative z-10">
+        <div className="text-4xl font-bold text-white text-center mb-1">
+          {price}
+        </div>
+        {!isFree && (
+          <div className="text-sm text-slate-400 text-center mb-6">/month</div>
+        )}
         
         <button 
           onClick={handlePurchase}
           disabled={loading}
-          className={`product-button ${variant} ${loading ? 'loading' : ''}`}
+          className={`w-full inline-flex items-center justify-center px-6 py-4 rounded-xl font-bold transition-all ${
+            loading ? 'bg-slate-600 cursor-not-allowed text-slate-400' : 
+            variant === 'premium' ? 'bg-gradient-to-r from-orange-500 via-pink-500 to-orange-600 hover:from-orange-600 hover:via-pink-600 hover:to-orange-700 text-white shadow-lg hover:shadow-orange-500/50 hover:scale-105' :
+            variant === 'basic' ? 'bg-gradient-to-r from-pink-500 to-yellow-500 hover:from-pink-600 hover:to-yellow-600 text-white shadow-lg hover:shadow-pink-500/50 hover:scale-105' :
+            'bg-slate-700 hover:bg-slate-600 text-white hover:scale-105'
+          }`}
         >
           {loading ? (
             <span className="flex items-center justify-center">
@@ -96,7 +143,7 @@ export function ProductCard({
             <>
               {isFree ? 'Get Started' : 
                !session ? 'Sign In to Purchase' : 
-               'Choose This Plan'}
+               'Sign In to Purchase'}
             </>
           )}
         </button>

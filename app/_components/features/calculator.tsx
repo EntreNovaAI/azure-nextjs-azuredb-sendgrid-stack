@@ -148,94 +148,94 @@ export function Calculator({ accessLevel }: CalculatorProps) {
   }
 
   return (
-    <div className="calculator">
-      <div className="calculator-display">
-        <div className="display-value">{display}</div>
+    <div className="max-w-[400px] mx-auto bg-white rounded-xl shadow p-6 border border-slate-200">
+      <div className="bg-slate-800 text-white p-4 rounded-lg mb-4 relative min-h-[60px] flex items-center justify-end">
+        <div className="text-2xl font-semibold font-mono break-all">{display}</div>
         {memory !== 0 && hasMemoryFunctions && (
-          <div className="memory-indicator">M</div>
+          <div className="absolute top-2 left-2 text-xs bg-blue-500 text-white px-2 py-1 rounded">M</div>
         )}
       </div>
 
-      <div className="calculator-buttons">
+      <div className="flex flex-col gap-2">
         {/* Row 1: Clear and Memory (if available) */}
-        <div className="button-row">
-          <button onClick={clear} className="btn btn-clear">C</button>
-          <button onClick={clearEntry} className="btn btn-clear">CE</button>
+        <div className="grid grid-cols-4 gap-2">
+          <button onClick={clear} className="px-4 py-3 rounded-lg text-lg font-semibold bg-red-500 text-white hover:bg-red-600 transition">C</button>
+          <button onClick={clearEntry} className="px-4 py-3 rounded-lg text-lg font-semibold bg-red-500 text-white hover:bg-red-600 transition">CE</button>
           {hasMemoryFunctions ? (
             <>
-              <button onClick={memoryRecall} className="btn btn-memory">MR</button>
-              <button onClick={memoryClear} className="btn btn-memory">MC</button>
+              <button onClick={memoryRecall} className="px-4 py-3 rounded-lg text-lg font-semibold bg-amber-500 text-white hover:bg-amber-600 transition">MR</button>
+              <button onClick={memoryClear} className="px-4 py-3 rounded-lg text-lg font-semibold bg-amber-500 text-white hover:bg-amber-600 transition">MC</button>
             </>
           ) : (
             <>
-              <button disabled className="btn btn-disabled">MR</button>
-              <button disabled className="btn btn-disabled">MC</button>
+              <button disabled className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-400 cursor-not-allowed">MR</button>
+              <button disabled className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-400 cursor-not-allowed">MC</button>
             </>
           )}
         </div>
 
         {/* Row 2: Advanced functions (Premium only) */}
-        <div className="button-row">
+        <div className="grid grid-cols-4 gap-2">
           {hasAdvancedFunctions ? (
             <>
-              <button onClick={percentage} className="btn btn-function">%</button>
-              <button onClick={squareRoot} className="btn btn-function">√</button>
-              <button onClick={square} className="btn btn-function">x²</button>
+              <button onClick={percentage} className="px-4 py-3 rounded-lg text-lg font-semibold bg-violet-500 text-white hover:bg-violet-600 transition">%</button>
+              <button onClick={squareRoot} className="px-4 py-3 rounded-lg text-lg font-semibold bg-violet-500 text-white hover:bg-violet-600 transition">√</button>
+              <button onClick={square} className="px-4 py-3 rounded-lg text-lg font-semibold bg-violet-500 text-white hover:bg-violet-600 transition">x²</button>
             </>
           ) : (
             <>
-              <button disabled className="btn btn-disabled">%</button>
-              <button disabled className="btn btn-disabled">√</button>
-              <button disabled className="btn btn-disabled">x²</button>
+              <button disabled className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-400 cursor-not-allowed">%</button>
+              <button disabled className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-400 cursor-not-allowed">√</button>
+              <button disabled className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-400 cursor-not-allowed">x²</button>
             </>
           )}
-          <button onClick={() => inputOperation('÷')} className="btn btn-operation">÷</button>
+          <button onClick={() => inputOperation('÷')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition">÷</button>
         </div>
 
         {/* Row 3: Numbers 7-9 and multiply */}
-        <div className="button-row">
-          <button onClick={() => inputNumber('7')} className="btn btn-number">7</button>
-          <button onClick={() => inputNumber('8')} className="btn btn-number">8</button>
-          <button onClick={() => inputNumber('9')} className="btn btn-number">9</button>
-          <button onClick={() => inputOperation('×')} className="btn btn-operation">×</button>
+        <div className="grid grid-cols-4 gap-2">
+          <button onClick={() => inputNumber('7')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200 transition">7</button>
+          <button onClick={() => inputNumber('8')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200 transition">8</button>
+          <button onClick={() => inputNumber('9')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200 transition">9</button>
+          <button onClick={() => inputOperation('×')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition">×</button>
         </div>
 
         {/* Row 4: Numbers 4-6 and subtract */}
-        <div className="button-row">
-          <button onClick={() => inputNumber('4')} className="btn btn-number">4</button>
-          <button onClick={() => inputNumber('5')} className="btn btn-number">5</button>
-          <button onClick={() => inputNumber('6')} className="btn btn-number">6</button>
-          <button onClick={() => inputOperation('-')} className="btn btn-operation">-</button>
+        <div className="grid grid-cols-4 gap-2">
+          <button onClick={() => inputNumber('4')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200 transition">4</button>
+          <button onClick={() => inputNumber('5')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200 transition">5</button>
+          <button onClick={() => inputNumber('6')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200 transition">6</button>
+          <button onClick={() => inputOperation('-')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition">-</button>
         </div>
 
         {/* Row 5: Numbers 1-3 and add */}
-        <div className="button-row">
-          <button onClick={() => inputNumber('1')} className="btn btn-number">1</button>
-          <button onClick={() => inputNumber('2')} className="btn btn-number">2</button>
-          <button onClick={() => inputNumber('3')} className="btn btn-number">3</button>
-          <button onClick={() => inputOperation('+')} className="btn btn-operation">+</button>
+        <div className="grid grid-cols-4 gap-2">
+          <button onClick={() => inputNumber('1')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200 transition">1</button>
+          <button onClick={() => inputNumber('2')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200 transition">2</button>
+          <button onClick={() => inputNumber('3')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200 transition">3</button>
+          <button onClick={() => inputOperation('+')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition">+</button>
         </div>
 
         {/* Row 6: Zero, decimal, memory add, equals */}
-        <div className="button-row">
-          <button onClick={() => inputNumber('0')} className="btn btn-number btn-zero">0</button>
-          <button onClick={() => inputNumber('.')} className="btn btn-number">.</button>
+        <div className="grid grid-cols-4 gap-2">
+          <button onClick={() => inputNumber('0')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200 transition col-span-1">0</button>
+          <button onClick={() => inputNumber('.')} className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200 transition">.</button>
           {hasMemoryFunctions ? (
-            <button onClick={memoryAdd} className="btn btn-memory">M+</button>
+            <button onClick={memoryAdd} className="px-4 py-3 rounded-lg text-lg font-semibold bg-amber-500 text-white hover:bg-amber-600 transition">M+</button>
           ) : (
-            <button disabled className="btn btn-disabled">M+</button>
+            <button disabled className="px-4 py-3 rounded-lg text-lg font-semibold bg-slate-100 text-slate-400 cursor-not-allowed">M+</button>
           )}
-          <button onClick={performCalculation} className="btn btn-equals">=</button>
+          <button onClick={performCalculation} className="px-4 py-3 rounded-lg text-lg font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition">=</button>
         </div>
       </div>
 
       {/* History section (Basic and Premium only) */}
       {hasHistory && history.length > 0 && (
-        <div className="calculator-history">
-          <h4>Recent Calculations</h4>
-          <div className="history-list">
+        <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+          <h4 className="text-sm text-slate-500 mb-2">Recent Calculations</h4>
+          <div className="flex flex-col gap-1">
             {history.slice(-3).map((calculation, index) => (
-              <div key={index} className="history-item">
+              <div key={index} className="text-xs text-slate-700 font-mono p-1 bg-white rounded">
                 {calculation}
               </div>
             ))}
@@ -244,16 +244,16 @@ export function Calculator({ accessLevel }: CalculatorProps) {
       )}
 
       {/* Feature notice */}
-      <div className="calculator-features">
-        <div className="feature-notice">
+      <div className="mt-4">
+        <div className="p-3 rounded-lg text-center text-sm bg-slate-100">
           {accessLevel === 'free' && (
-            <p>🔒 Upgrade to <strong>Basic</strong> for memory functions and calculation history</p>
+            <p className="m-0">🔒 Upgrade to <strong>Basic</strong> for memory functions and calculation history</p>
           )}
           {accessLevel === 'basic' && (
-            <p>🔒 Upgrade to <strong>Premium</strong> for advanced functions (%, √, x²)</p>
+            <p className="m-0">🔒 Upgrade to <strong>Premium</strong> for advanced functions (%, √, x²)</p>
           )}
           {accessLevel === 'premium' && (
-            <p>✨ You have access to all calculator features!</p>
+            <p className="m-0">✨ You have access to all calculator features!</p>
           )}
         </div>
       </div>

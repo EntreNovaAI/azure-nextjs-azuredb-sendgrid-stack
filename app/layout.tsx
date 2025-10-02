@@ -19,11 +19,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white antialiased">
         <AuthProvider>
-          <div className="app-container">
+          {/* Modern dark theme layout with gradient background */}
+          <div className="min-h-screen flex flex-col">
             <Navigation />
-            <main className="main-content">
+            <main className="flex-1">
               {children}
             </main>
           </div>
