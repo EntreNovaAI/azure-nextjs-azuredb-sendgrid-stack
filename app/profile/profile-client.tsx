@@ -113,8 +113,8 @@ export function ProfileClient({ user }: ProfileClientProps) {
   return (
     <div className="max-w-[800px] mx-auto p-8">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-slate-900 mb-2">My Profile</h1>
-        <p className="text-slate-600">Manage your account information and subscription</p>
+        <h1 className="text-4xl font-bold text-slate-100 mb-2">My Profile</h1>
+        <p className="text-slate-300">Manage your account information and subscription</p>
       </div>
 
       <div>

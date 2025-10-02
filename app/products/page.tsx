@@ -91,8 +91,8 @@ export default function ProductsPage() {
       {/* Calculator Section */}
       <div className="mb-12">
         <div className="text-center mb-8">
-          <h2 className="text-2xl mb-2 text-slate-800">Calculator Demo</h2>
-          <p className="text-slate-600">Try our calculator with features based on your current access level</p>
+          <h2 className="text-2xl mb-2 text-slate-200">Calculator Demo</h2>
+          <p className="text-slate-300">Try our calculator with features based on your current access level</p>
         </div>
         
         <Calculator accessLevel={accessLevel} />
@@ -102,7 +102,7 @@ export default function ProductsPage() {
       <div id="upgrade-section" className="mb-8">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-slate-800 mb-4">Upgrade Your Plan</h2>
-          <p className="text-slate-600">Unlock more calculator features with our premium plans</p>
+          <p className="text-yellow-200">Unlock more calculator features with our premium plans</p>
           
           {/* Display user information */}
           <UserInfo user={user} />

@@ -107,12 +107,38 @@ export async function ensureVerificationTokenTable(): Promise<void> {
   `.execute(db)
 }
 
+/**
+ * Create the dbo.[PasswordResetToken] table if it doesn't exist.
+ */
+export async function ensurePasswordResetTokenTable(): Promise<void> {
+  await sql`
+    IF NOT EXISTS (
+      SELECT * FROM sys.objects 
+      WHERE object_id = OBJECT_ID(N'dbo.[PasswordResetToken]') AND type IN (N'U')
+    )
+    BEGIN
+      CREATE TABLE dbo.[PasswordResetToken] (
+        id         NVARCHAR(100)  NOT NULL PRIMARY KEY,
+        userId     NVARCHAR(100)  NOT NULL,
+        token      NVARCHAR(255)  NOT NULL,
+        expires    DATETIME2      NOT NULL,
+        used       BIT            NOT NULL CONSTRAINT DF_PasswordResetToken_used DEFAULT (0),
+        createdAt  DATETIME2      NOT NULL CONSTRAINT DF_PasswordResetToken_createdAt DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_PasswordResetToken_User FOREIGN KEY (userId) REFERENCES dbo.[User](id) ON DELETE CASCADE
+      );
+      CREATE UNIQUE INDEX IX_PasswordResetToken_Token ON dbo.[PasswordResetToken] (token);
+      CREATE INDEX IX_PasswordResetToken_UserId_Used ON dbo.[PasswordResetToken] (userId, used);
+    END
+  `.execute(db)
+}
+
 /** Ensure all required tables exist (idempotent). */
 export async function ensureAllTables(): Promise<void> {
   await ensureUserTable()
   await ensureAccountTable()
   await ensureSessionTable()
   await ensureVerificationTokenTable()
+  await ensurePasswordResetTokenTable()
 }
 
 

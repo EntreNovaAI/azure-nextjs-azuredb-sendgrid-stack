@@ -7,7 +7,7 @@
 This template provides a complete, scalable foundation with:
 
 ### Core Stack
-- **Next.js 14** with App Router
+- **Next.js 15** with App Router
 - **NextAuth.js v5** for authentication
 - **TypeScript** for type safety
 - **Kysely** query builder with Azure SQL Database

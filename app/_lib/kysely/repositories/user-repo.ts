@@ -1,5 +1,5 @@
 import { db } from '@/app/_lib/kysely'
-import type { NewUser, User, UserUpdate } from '@/app/_lib/kysely/types'
+import type { NewUser, User, UserUpdate, NewPasswordResetToken, PasswordResetToken } from '@/app/_lib/kysely/types'
 import { createId } from '@paralleldrive/cuid2'
 import { hashPassword } from '@/app/_lib/auth/password-utils'
 
@@ -226,6 +226,97 @@ export async function userHasPassword(email: string): Promise<boolean> {
     .executeTakeFirst()
 
   return !!(user?.password)
+}
+
+/**
+ * Create a password reset token for a user
+ * @param userId - User's ID
+ * @param token - Reset token string
+ * @param expiresInHours - Token expiration time in hours (default: 24)
+ * @returns Promise<string> - The created token ID
+ */
+export async function createPasswordResetToken(
+  userId: string,
+  token: string,
+  expiresInHours: number = 24
+): Promise<string> {
+  const now = new Date()
+  const expiresAt = new Date(now.getTime() + (expiresInHours * 60 * 60 * 1000))
+
+  // Invalidate any existing unused tokens for this user
+  await db
+    .updateTable('PasswordResetToken')
+    .set({ used: true })
+    .where('userId', '=', userId)
+    .where('used', '=', false)
+    .execute()
+
+  // Create new token
+  const id = createId()
+  await db
+    .insertInto('PasswordResetToken')
+    .values({
+      id,
+      userId,
+      token,
+      expires: expiresAt,
+      used: false,
+      createdAt: now,
+    } as any)
+    .execute()
+
+  return id
+}
+
+/**
+ * Get a valid password reset token by token string
+ * @param token - The reset token string
+ * @returns Promise<PasswordResetToken | null> - The token if found and valid
+ */
+export async function getValidPasswordResetToken(token: string): Promise<PasswordResetToken | null> {
+  const now = new Date()
+
+  const resetToken = await db
+    .selectFrom('PasswordResetToken')
+    .selectAll()
+    .where('token', '=', token)
+    .where('used', '=', false)
+    .where('expires', '>', now)
+    .executeTakeFirst()
+
+  return resetToken as any ?? null
+}
+
+/**
+ * Mark a password reset token as used
+ * @param token - The reset token string
+ * @returns Promise<boolean> - True if token was found and marked as used
+ */
+export async function markPasswordResetTokenAsUsed(token: string): Promise<boolean> {
+  const result = await db
+    .updateTable('PasswordResetToken')
+    .set({ used: true })
+    .where('token', '=', token)
+    .where('used', '=', false)
+    .execute()
+
+  // Check if any rows were affected
+  return result.length > 0
+}
+
+/**
+ * Clean up expired password reset tokens (should be run periodically)
+ * @returns Promise<number> - Number of tokens deleted
+ */
+export async function cleanupExpiredPasswordResetTokens(): Promise<number> {
+  const now = new Date()
+
+  const result = await db
+    .deleteFrom('PasswordResetToken')
+    .where('expires', '<=', now)
+    .execute()
+
+  return result.length
 }
 
 
