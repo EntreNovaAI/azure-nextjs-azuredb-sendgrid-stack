@@ -16,7 +16,7 @@ interface FeaturesSectionProps {
  * Data-driven features section that renders a grid of feature cards
  * Accepts an array of features to display, making it reusable across pages
  */
-export function FeaturesSection({ features, className = "hero-features" }: FeaturesSectionProps) {
+export function FeaturesSection({ features, className = "grid grid-cols-1 md:grid-cols-3 gap-8" }: FeaturesSectionProps) {
   return (
     <div className={className}>
       {features.map((feature, index) => (

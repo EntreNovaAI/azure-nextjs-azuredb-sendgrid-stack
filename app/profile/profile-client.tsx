@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
+import axios from 'axios'
 
 // User type definition for the profile page
 interface User {
@@ -73,31 +74,23 @@ export function ProfileClient({ user }: ProfileClientProps) {
     setUnsubscribeStatus(null)
 
     try {
-      // Call the unsubscribe API endpoint
-      const response = await fetch('/api/stripe/unsubscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          stripeCustomerId: user.stripeCustomerId
-        })
+      // Call the unsubscribe API endpoint using axios
+      const response = await axios.post('/api/stripe/unsubscribe', {
+        stripeCustomerId: user.stripeCustomerId
       })
 
-      const data = await response.json()
-
-      if (response.ok) {
-        setUnsubscribeStatus('Successfully unsubscribed! Your subscription will end at the end of the current billing period.')
-        // Refresh the page to show updated user data
-        setTimeout(() => {
-          router.refresh()
-        }, 2000)
-      } else {
-        setUnsubscribeStatus(data.error || 'Failed to unsubscribe. Please try again.')
-      }
+      setUnsubscribeStatus('Successfully unsubscribed! Your subscription will end at the end of the current billing period.')
+      // Refresh the page to show updated user data
+      setTimeout(() => {
+        router.refresh()
+      }, 2000)
     } catch (error) {
       console.error('Error unsubscribing:', error)
-      setUnsubscribeStatus('An error occurred while unsubscribing. Please try again.')
+      if (axios.isAxiosError(error) && error.response) {
+        setUnsubscribeStatus(error.response.data.error || 'Failed to unsubscribe. Please try again.')
+      } else {
+        setUnsubscribeStatus('An error occurred while unsubscribing. Please try again.')
+      }
     } finally {
       setIsUnsubscribing(false)
     }
@@ -118,77 +111,69 @@ export function ProfileClient({ user }: ProfileClientProps) {
   }
 
   return (
-    <div className="profile-container">
-      <div className="profile-header">
-        <h1>My Profile</h1>
-        <p>Manage your account information and subscription</p>
+    <div className="max-w-[800px] mx-auto p-8">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold text-slate-100 mb-2">My Profile</h1>
+        <p className="text-slate-300">Manage your account information and subscription</p>
       </div>
 
-      <div className="profile-content">
+      <div>
         {/* User Information Section */}
-        <div className="profile-section">
-          <h2>Account Information</h2>
+        <div className="bg-white rounded-xl p-8 mb-8 shadow border border-slate-200">
+          <h2 className="text-xl font-semibold text-slate-900 mb-6 border-b-2 border-slate-100 pb-2">Account Information</h2>
           
-          <div className="profile-info">
+          <div className="flex items-start gap-8">
             {/* Profile Image */}
             {user.image && (
-              <div className="profile-image">
-                <img 
-                  src={user.image} 
-                  alt="Profile" 
-                  className="profile-avatar"
-                />
+              <div className="shrink-0">
+                <img src={user.image} alt="Profile" className="w-20 h-20 rounded-full object-cover border-4 border-slate-200" />
               </div>
             )}
             
             {/* User Details */}
-            <div className="profile-details">
-              <div className="profile-field">
-                <label>Name:</label>
-                <span>{user.name || 'Not provided'}</span>
+            <div className="flex-1">
+              <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                <label className="font-semibold text-slate-800 min-w-[120px]">Name:</label>
+                <span className="text-slate-600">{user.name || 'Not provided'}</span>
               </div>
-              
-              <div className="profile-field">
-                <label>Email:</label>
-                <span>{user.email}</span>
+              <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                <label className="font-semibold text-slate-800 min-w-[120px]">Email:</label>
+                <span className="text-slate-600">{user.email}</span>
               </div>
-              
-              <div className="profile-field">
-                <label>Member Since:</label>
-                <span>{formatDate(user.createdAt)}</span>
+              <div className="flex justify-between items-center py-3">
+                <label className="font-semibold text-slate-800 min-w-[120px]">Member Since:</label>
+                <span className="text-slate-600">{formatDate(user.createdAt)}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Subscription Section */}
-        <div className="profile-section">
-          <h2>Subscription Details</h2>
+        <div className="bg-white rounded-xl p-8 mb-8 shadow border border-slate-200">
+          <h2 className="text-xl font-semibold text-slate-900 mb-6">Subscription Details</h2>
           
-          <div className="subscription-info">
-            <div className="profile-field">
-              <label>Current Plan:</label>
-              <span className={`plan-status ${getPlanStatusColor(user.accessLevel)}`}>
+          <div className="mb-6">
+            <div className="flex justify-between items-center py-3 border-b border-slate-100">
+              <label className="font-semibold text-slate-800 min-w-[120px]">Current Plan:</label>
+              <span className={`font-semibold capitalize ${getPlanStatusColor(user.accessLevel)}`}>
                 {formatAccessLevel(user.accessLevel)}
               </span>
             </div>
-            
             {user.stripeCustomerId && (
-              <div className="profile-field">
-                <label>Customer ID:</label>
-                <span className="customer-id">{user.stripeCustomerId}</span>
+              <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                <label className="font-semibold text-slate-800 min-w-[120px]">Customer ID:</label>
+                <span className="font-mono text-sm bg-slate-100 px-2 py-1 rounded">{user.stripeCustomerId}</span>
               </div>
             )}
-            
-            <div className="profile-field">
-              <label>Last Updated:</label>
-              <span>{formatDate(user.updatedAt)}</span>
+            <div className="flex justify-between items-center py-3">
+              <label className="font-semibold text-slate-800 min-w-[120px]">Last Updated:</label>
+              <span className="text-slate-600">{formatDate(user.updatedAt)}</span>
             </div>
           </div>
 
           {/* Unsubscribe Section */}
           {user.accessLevel !== 'free' && user.stripeCustomerId && (
-            <div className="unsubscribe-section">
+            <div className="pt-6 border-t border-slate-100">
               <h3>Manage Subscription</h3>
               <p>
                 You are currently subscribed to the {formatAccessLevel(user.accessLevel)}. 
@@ -198,13 +183,13 @@ export function ProfileClient({ user }: ProfileClientProps) {
               <button 
                 onClick={handleUnsubscribe}
                 disabled={isUnsubscribing}
-                className="unsubscribe-button"
+                className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
               >
                 {isUnsubscribing ? 'Processing...' : 'Unsubscribe'}
               </button>
               
               {unsubscribeStatus && (
-                <div className={`status-message ${unsubscribeStatus.includes('Successfully') ? 'success' : 'error'}`}>
+                <div className={`mt-4 p-4 rounded font-medium ${unsubscribeStatus.includes('Successfully') ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
                   {unsubscribeStatus}
                 </div>
               )}
@@ -213,11 +198,11 @@ export function ProfileClient({ user }: ProfileClientProps) {
 
           {/* Free Plan Message */}
           {user.accessLevel === 'free' && (
-            <div className="free-plan-message">
+            <div className="pt-6 border-t border-slate-100">
               <h3>Free Plan</h3>
               <p>
                 You are currently on the free plan. 
-                <a href="/products" className="upgrade-link">Upgrade to a paid plan</a> 
+                <a href="/products" className="text-blue-600 font-semibold hover:underline">Upgrade to a paid plan</a> 
                 to access premium features.
               </p>
             </div>
@@ -225,13 +210,13 @@ export function ProfileClient({ user }: ProfileClientProps) {
         </div>
 
         {/* Account Actions */}
-        <div className="profile-section">
-          <h2>Account Actions</h2>
+        <div className="bg-white rounded-xl p-8 mb-8 shadow border border-slate-200">
+          <h2 className="text-xl font-semibold text-slate-900 mb-6">Account Actions</h2>
           
-          <div className="account-actions">
+          <div className="flex gap-4">
             <button 
               onClick={() => signOut({ callbackUrl: '/' })}
-              className="sign-out-button"
+              className="bg-slate-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-slate-800 transition-colors"
             >
               Sign Out
             </button>

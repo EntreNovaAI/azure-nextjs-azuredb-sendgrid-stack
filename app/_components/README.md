@@ -28,6 +28,7 @@ app/_components/
 ## Usage
 
 ### Import from Category Folders
+
 ```typescript
 // Import specific components from categories
 import { AuthProvider, LoginButton } from '@/app/_components/auth'
@@ -37,6 +38,7 @@ import { StripeCheckout } from '@/app/_components/payment'
 ```
 
 ### Import from Main Barrel
+
 ```typescript
 // Import everything from main barrel (less recommended for large apps)
 import { AuthProvider, Navigation, Calculator } from '@/app/_components'
@@ -45,19 +47,23 @@ import { AuthProvider, Navigation, Calculator } from '@/app/_components'
 ## Component Categories
 
 ### Auth Components (`/auth`)
+
 - **AuthProvider**: Wraps app with NextAuth session provider
 - **LoginButton**: Handles Google OAuth login/logout with user display
 - **UserInfo**: Shows user account details and access level
 
 ### UI Components (`/ui`)
+
 - **Navigation**: Main navigation bar with auth-aware menu items
 - **ProductCard**: Reusable card for displaying product/subscription tiers
 - **PageStates**: Loading states, auth required messages, and access notices
 
 ### Feature Components (`/features`)
+
 - **Calculator**: Feature-rich calculator with tiered functionality based on user access level
 
 ### Payment Components (`/payment`)
+
 - **StripeCheckout**: Embedded Stripe checkout form following Stripe's best practices
 
 ## Benefits of This Organization

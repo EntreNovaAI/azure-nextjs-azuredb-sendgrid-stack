@@ -23,15 +23,19 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
-    }
+      "@/*": [
+        "./*"
+      ]
+    },
+    "target": "ES2017"
   },
   "include": [
     "next-env.d.ts",
     ".next/types/**/*.ts",
     "**/*.ts",
-    "**/*.tsx"
-, "vitest.config.mts"  ],
+    "**/*.tsx",
+    "vitest.config.mts"
+  ],
   "exclude": [
     "node_modules"
   ]

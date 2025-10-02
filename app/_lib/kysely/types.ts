@@ -1,6 +1,6 @@
-// Kysely table and database types mirroring prisma/schema.prisma
+// Kysely table and database types for Azure SQL (MSSQL)
 // We target Azure SQL (MSSQL) via Kysely's Mssql dialect.
-// Keep these in sync with your Prisma models if you continue to use Prisma for migrations.
+// These types define the database schema used by the application.
 
 import {
   ColumnType,
@@ -20,6 +20,7 @@ export interface UserTable {
   email: string | null
   emailVerified: Date | null
   image: string | null
+  password: string | null // Bcrypt hashed password for vanilla login
   accessLevel: string // 'free' | 'basic' | 'premium' in app logic; keep as string in DB
   stripeCustomerId: string | null
   // On select: Date; on insert: optional Date or string; on update: never (server default)
@@ -56,6 +57,16 @@ export interface VerificationTokenTable {
   expires: Date
 }
 
+export interface PasswordResetTokenTable {
+  id: string
+  userId: string
+  token: string
+  expires: Date
+  used: boolean
+  // On select: Date; on insert: optional Date or string; on update: never (server default)
+  createdAt: ColumnType<Date, Date | string | undefined, never>
+}
+
 // Database mapping of table names to their schemas.
 // NOTE: We intentionally match Prisma's model names as table names here
 //       (User, Account, Session, VerificationToken). MSSQL is case-insensitive
@@ -65,6 +76,7 @@ export interface DB {
   Account: AccountTable
   Session: SessionTable
   VerificationToken: VerificationTokenTable
+  PasswordResetToken: PasswordResetTokenTable
 }
 
 // Convenient derived types if you want to surface them in repos/services
@@ -83,5 +95,9 @@ export type SessionUpdate = Updateable<SessionTable>
 export type VerificationToken = Selectable<VerificationTokenTable>
 export type NewVerificationToken = Insertable<VerificationTokenTable>
 export type VerificationTokenUpdate = Updateable<VerificationTokenTable>
+
+export type PasswordResetToken = Selectable<PasswordResetTokenTable>
+export type NewPasswordResetToken = Insertable<PasswordResetTokenTable>
+export type PasswordResetTokenUpdate = Updateable<PasswordResetTokenTable>
 
 

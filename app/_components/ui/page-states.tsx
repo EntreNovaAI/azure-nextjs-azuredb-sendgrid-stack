@@ -4,10 +4,10 @@
  */
 export function LoadingState({ message = "Loading..." }: { message?: string }) {
   return (
-    <div className="page-container">
-      <div className="loading-state">
-        <h2>Loading...</h2>
-        <p>{message}</p>
+    <div className="max-w-[1200px] mx-auto px-4">
+      <div className="text-center py-16 px-8">
+        <h2 className="text-2xl text-slate-800 mb-4">Loading...</h2>
+        <p className="text-slate-600 text-lg">{message}</p>
       </div>
     </div>
   )
@@ -25,10 +25,10 @@ export function AuthRequiredState({
   message?: string 
 }) {
   return (
-    <div className="page-container">
-      <div className="auth-required">
-        <h2>{title}</h2>
-        <p>{message}</p>
+    <div className="max-w-[1200px] mx-auto px-4">
+      <div className="text-center py-16 px-8">
+        <h2 className="text-2xl text-slate-800 mb-4">{title}</h2>
+        <p className="text-slate-600 text-lg">{message}</p>
       </div>
     </div>
   )
@@ -46,9 +46,9 @@ export function AccessNotice({
   title?: string 
 }) {
   return (
-    <div className="access-notice">
-      <h3>{title}</h3>
-      <p>
+    <div className="bg-orange-50 border border-orange-300 p-8 rounded-lg text-center">
+      <h3 className="text-slate-800 mb-2">{title}</h3>
+      <p className="text-orange-900">
         This page is only accessible to authenticated users. Your account 
         has <strong>{accessLevel}</strong> access level.
       </p>

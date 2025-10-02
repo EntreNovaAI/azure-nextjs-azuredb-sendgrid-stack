@@ -13,26 +13,30 @@ export function Navigation() {
   const { data: session } = useSession()
 
   return (
-    <nav className="navigation">
-      <div className="nav-container">
+    // Modern navigation with transparent background and glass effect
+    <nav className="bg-white/5 backdrop-blur-lg border-b border-white/10 py-4">
+      <div className="max-w-[1200px] mx-auto px-4 flex justify-between items-center">
         {/* Logo/Brand */}
-        <Link href="/" className="nav-brand">
-          <h1>Azure Next Stack</h1>
+        <Link href="/" className="no-underline">
+          {/* Modern brand with warm sunset gradient text */}
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-400 via-pink-400 to-yellow-400 bg-clip-text text-transparent flex items-center gap-2">
+            <span className="text-3xl">🚀</span> Azure Next Stack
+          </h1>
         </Link>
 
         {/* Navigation Links */}
-        <div className="nav-links">
-          <Link href="/" className="nav-link">
+        <div className="flex gap-8">
+          <Link href="/" className="text-slate-300 hover:text-white font-medium transition-colors">
             Home
           </Link>
           
           {/* Show protected links only when authenticated */}
           {session && (
             <>
-              <Link href="/products" className="nav-link">
+              <Link href="/products" className="text-slate-300 hover:text-white font-medium transition-colors">
                 Products
               </Link>
-              <Link href="/profile" className="nav-link">
+              <Link href="/profile" className="text-slate-300 hover:text-white font-medium transition-colors">
                 Profile
               </Link>
             </>
@@ -40,7 +44,7 @@ export function Navigation() {
         </div>
 
         {/* Auth Section */}
-        <div className="nav-auth">
+        <div className="flex items-center gap-4">
           <LoginButton />
         </div>
       </div>

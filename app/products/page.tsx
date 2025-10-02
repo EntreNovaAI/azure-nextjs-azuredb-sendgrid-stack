@@ -56,26 +56,31 @@ export default function ProductsPage() {
   const accessLevelDisplay = accessLevel.charAt(0).toUpperCase() + accessLevel.slice(1)
 
   return (
-    <div className="page-container">
+    // Tailwind migration: replaces `.page-container`
+    <div className="max-w-[1200px] mx-auto px-4">
       {/* Access Level Banner */}
-      <div className={`access-level-banner ${accessLevel}`}>
-        <div className="banner-content">
-          <div className="access-info">
-            <h2>
+      <div className={`p-6 rounded-xl mb-8 border-2 ${
+        accessLevel === 'free' ? 'bg-slate-100 border-slate-400 text-slate-600' :
+        accessLevel === 'basic' ? 'bg-amber-100 border-amber-400 text-amber-900' :
+        'bg-violet-100 border-violet-500 text-violet-900'
+      }`}>
+        <div className="flex justify-between items-center flex-wrap gap-4">
+          <div>
+            <h2 className="text-xl mb-2">
               {accessLevel === 'free' && '🆓 Free Version'}
               {accessLevel === 'basic' && '⭐ Basic Version'}
               {accessLevel === 'premium' && '🏢 Premium Version'}
             </h2>
-            <p>
+            <p className="opacity-80 m-0">
               {accessLevel === 'free' && 'You have access to basic calculator functions'}
               {accessLevel === 'basic' && 'You have access to memory functions and calculation history'}
               {accessLevel === 'premium' && 'You have access to all advanced calculator features'}
             </p>
           </div>
           {accessLevel !== 'premium' && (
-            <div className="upgrade-prompt">
-              <p>Want more features?</p>
-              <a href="#upgrade-section" className="upgrade-link">
+            <div className="text-right">
+              <p className="m-0 text-sm">Want more features?</p>
+              <a href="#upgrade-section" className="inline-block px-3 py-2 rounded font-semibold bg-white/20 hover:bg-white/30 transition">
                 Upgrade Now →
               </a>
             </div>
@@ -84,27 +89,27 @@ export default function ProductsPage() {
       </div>
 
       {/* Calculator Section */}
-      <div className="calculator-section">
-        <div className="section-header">
-          <h2>Calculator Demo</h2>
-          <p>Try our calculator with features based on your current access level</p>
+      <div className="mb-12">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl mb-2 text-slate-200">Calculator Demo</h2>
+          <p className="text-slate-300">Try our calculator with features based on your current access level</p>
         </div>
         
         <Calculator accessLevel={accessLevel} />
       </div>
 
       {/* Products Section */}
-      <div id="upgrade-section" className="products-section">
-        <div className="products-header">
-          <h2>Upgrade Your Plan</h2>
-          <p>Unlock more calculator features with our premium plans</p>
+      <div id="upgrade-section" className="mb-8">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-slate-800 mb-4">Upgrade Your Plan</h2>
+          <p className="text-yellow-200">Unlock more calculator features with our premium plans</p>
           
           {/* Display user information */}
           <UserInfo user={user} />
         </div>
 
         {/* Product Grid */}
-        <div className="products-grid">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-8 mb-12">
           {products.map((product) => (
             <ProductCard
               key={product.id}
