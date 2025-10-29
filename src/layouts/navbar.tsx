@@ -56,10 +56,10 @@ export function Navbar() {
           {session && (
             <>
               <Link 
-                href="/products" 
+                href="/dashboard" 
                 className="text-lg font-medium text-foreground/60 hover:text-foreground transition-colors"
               >
-                Products
+                Dashboard
               </Link>
               <Link 
                 href="/profile" 
@@ -104,10 +104,10 @@ export function Navbar() {
                 {session && (
                   <>
                     <Link 
-                      href="/products" 
+                      href="/dashboard" 
                       className="text-lg font-medium text-foreground/80 hover:text-foreground transition-colors py-2"
                     >
-                      Products
+                      Dashboard
                     </Link>
                     <Link 
                       href="/profile" 

@@ -43,8 +43,8 @@ export function Navigation() {
           {/* Show protected links only when authenticated */}
           {session && (
             <>
-              <Link href="/products" className="text-dark-text-secondary hover:text-dark-text font-medium transition-colors">
-                Products
+              <Link href="/dashboard" className="text-dark-text-secondary hover:text-dark-text font-medium transition-colors">
+                Dashboard
               </Link>
               <Link href="/profile" className="text-dark-text-secondary hover:text-dark-text font-medium transition-colors">
                 Profile

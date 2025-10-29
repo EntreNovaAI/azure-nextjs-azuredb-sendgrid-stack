@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { MainLayout } from '@/src/layouts'
 import { ProductCard, FeaturesSection, HeroSection, homeHeroContent, Card, CardContent } from '@components/ui'
-import { products } from '@/app/products/_data/products'
+import { products } from '@/app/(product)/dashboard/_data/products'
 import { heroFeatures } from '@src/data/features'
 
 /**

@@ -209,7 +209,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
                   <h3 className="font-semibold mb-2">Free Plan</h3>
                   <p className="text-sm text-muted-foreground">
                     You are currently on the free plan. {' '}
-                    <Link href="/products" className="text-primary font-semibold hover:underline">
+                    <Link href="/dashboard" className="text-primary font-semibold hover:underline">
                       Upgrade to a paid plan
                     </Link> {' '}
                     to access premium features.

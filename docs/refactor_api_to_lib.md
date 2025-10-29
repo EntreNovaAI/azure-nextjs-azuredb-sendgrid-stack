@@ -92,7 +92,7 @@ All client components updated to use Server Actions instead of axios API calls:
 - `app/auth/components/vanilla-login-form.tsx` - Uses `registerUserAction`
 
 #### User Components:
-- `app/products/page.tsx` - Uses `getUserAction`
+- `app/(product)/dashboard/page.tsx` - Uses `getUserAction`
 - `app/checkout/return/page.tsx` - Uses `updateUserAction` and `getSessionStatusAction`
 
 #### Stripe Components:
@@ -116,7 +116,7 @@ Replaced all old import paths throughout the codebase:
 #### Files Updated:
 - `app/layout.tsx`
 - `app/page.tsx`
-- `app/products/page.tsx`
+- `app/(product)/dashboard/page.tsx`
 - `app/checkout/return/page.tsx`
 - `src/lib/kysely/repositories/user-repo.ts`
 - All auth, user, and Stripe components

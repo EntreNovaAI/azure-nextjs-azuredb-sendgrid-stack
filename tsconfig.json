@@ -17,7 +17,7 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "plugins": [
       {
         "name": "next"
@@ -48,8 +48,8 @@
       "@api/*": [
         "app/api/*"
       ],
-      "@products/*": [
-        "app/products/*"
+      "@dashboard/*": [
+        "app/(product)/dashboard/*"
       ],
       "@types/*": [
         "src/types/*"
@@ -68,7 +68,8 @@
     ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx",
-    "vitest.config.mts"
+    "vitest.config.mts",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

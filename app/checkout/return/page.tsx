@@ -169,8 +169,8 @@ export default function CheckoutReturn() {
           </div>
           <h1 className="text-xl font-semibold mb-2">Error</h1>
           <p className="text-destructive mb-4">{error}</p>
-          <Button onClick={() => router.push('/products')}>
-            Back to Products
+          <Button onClick={() => router.push('/dashboard')}>
+            Back to Dashboard
           </Button>
         </div>
       </MainLayout>
@@ -236,10 +236,10 @@ export default function CheckoutReturn() {
           {/* Action buttons */}
           <div className="space-y-3">
             <Button 
-              onClick={() => router.push('/products')}
+              onClick={() => router.push('/dashboard')}
               className="w-full"
             >
-              View Products
+              View Dashboard
             </Button>
             <Button 
               onClick={() => router.push('/')}
@@ -270,8 +270,8 @@ export default function CheckoutReturn() {
             <p><strong>Payment Status:</strong> {sessionStatus?.payment_status || 'Unknown'}</p>
           </CardContent>
         </Card>
-        <Button onClick={() => router.push('/products')}>
-          Back to Products
+        <Button onClick={() => router.push('/dashboard')}>
+          Back to Dashboard
         </Button>
       </div>
     </MainLayout>

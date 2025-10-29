@@ -19,7 +19,7 @@ This guide explains how to test the authentication system and user access levels
 
 ### 🛡️ Protected Content
 
-- **Products Page**: Only accessible to authenticated users
+- **Dashboard Page**: Only accessible to authenticated users
 - **Access Control**: Non-authenticated users see login prompts
 - **User Experience**: Smooth redirect flow after authentication
 - **Modular Components**: Reusable ProductCard, UserInfo, and PageState components
@@ -78,8 +78,8 @@ DATABASE_URL=your_postgresql_connection_string
 
 ### Test Scenario 2: Protected Content Access
 
-1. **While authenticated**, click on "Products" in navigation
-2. **Verify**: Products page loads successfully with modular components
+1. **While authenticated**, click on "Dashboard" in navigation
+2. **Verify**: Dashboard page loads successfully with modular components
 3. **Check user info**: Page should display user's access level and join date
 4. **Verify database**: User record should exist with 'free' access level
 5. **Check components**: ProductCard components should render from data/products.ts
@@ -87,16 +87,16 @@ DATABASE_URL=your_postgresql_connection_string
 ### Test Scenario 3: Unauthenticated Access
 
 1. **Sign out** using the "Sign Out" button
-2. **Try to access products page directly**: `http://localhost:3000/products`
+2. **Try to access dashboard page directly**: `http://localhost:3000/dashboard`
 3. **Verify**: Page shows "Authentication Required" message using AuthRequiredState component
-4. **Navigation check**: Products link should not appear in navigation when signed out
+4. **Navigation check**: Dashboard link should not appear in navigation when signed out
 
 ### Test Scenario 4: User Record Persistence
 
 1. **Sign in** for the first time
-2. **Visit products page** to see user details
+2. **Visit dashboard page** to see user details
 3. **Sign out and sign in again**
-4. **Visit products page** again
+4. **Visit dashboard page** again
 5. **Verify**: Same user record is retrieved (check the "Member Since" date)
 
 ### Test Scenario 5: Component Modularity
@@ -188,7 +188,7 @@ After migration, you should have these tables:
 ## Success Criteria
 
 ✅ **Authentication Works**: Users can sign in with Google OAuth  
-✅ **Protected Routes**: Products page requires authentication  
+✅ **Protected Routes**: Dashboard page requires authentication  
 ✅ **User Creation**: Database creates user records with access levels automatically  
 ✅ **Access Levels**: New users get 'free' access level by default  
 ✅ **Session Management**: Users stay logged in across page refreshes  

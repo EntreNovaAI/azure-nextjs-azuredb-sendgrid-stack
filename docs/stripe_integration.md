@@ -86,7 +86,7 @@ pnpm dev
 ```
 
 ### Step 2: Test the Payment Flow
-1. Navigate to `http://localhost:3000/products`
+1. Navigate to `http://localhost:3000/dashboard`
 2. Click on either "Basic Plan" or "Premium Plan"
 3. You'll be redirected to the checkout page
 4. Use Stripe's test card numbers:
@@ -104,7 +104,7 @@ pnpm dev
 ## 6. How the Integration Works
 
 ### Payment Flow
-1. User selects a subscription plan on `/products` page
+1. User selects a subscription plan on `/dashboard` page
 2. User is redirected to `/checkout` page with Stripe's embedded checkout
 3. After payment, Stripe redirects to `/checkout/return` page
 4. Stripe sends a webhook to `/api/stripe/webhooks/stripe` to confirm payment

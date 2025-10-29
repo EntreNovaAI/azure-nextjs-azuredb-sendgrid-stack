@@ -4,16 +4,16 @@ import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { MainLayout } from '@/src/layouts'
 import { ProductCard, LoadingState, AuthRequiredState, AccessNotice, UserInfo, Card, CardContent } from '@components/ui'
-import { Calculator } from '@/app/products/components'
-import { products } from '@/app/products/_data/products'
+import { Calculator } from '@/app/(product)/dashboard/components'
+import { products } from '@/app/(product)/dashboard/_data/products'
 import { getUserAction } from '@lib/user/user-actions'
 
 /**
- * Protected Products Page
+ * Protected Dashboard Page
  * Only accessible to authenticated users
  * Displays premium content and user access level
  */
-export default function ProductsPage() {
+export default function DashboardPage() {
   const { data: session, status } = useSession()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -48,12 +48,12 @@ export default function ProductsPage() {
 
   // Show loading state
   if (status === 'loading' || loading) {
-    return <LoadingState message="Please wait while we load your products." />
+    return <LoadingState message="Please wait while we load your dashboard." />
   }
 
   // Redirect to login if not authenticated
   if (!session) {
-    return <AuthRequiredState message="Please sign in to access our premium products." />
+    return <AuthRequiredState message="Please sign in to access your dashboard." />
   }
 
   // Get access level for display

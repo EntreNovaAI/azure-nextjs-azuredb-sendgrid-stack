@@ -45,12 +45,12 @@ export const homeHeroContent: HeroContent = {
   authenticatedContent: {
     message: "",
     buttonText: "View Premium Products →",
-    buttonHref: "/products"
+    buttonHref: "/dashboard"
   },
   unauthenticatedContent: {
     message: "Sign in to access our premium subscription plans",
     buttonText: "Explore Products →", 
-    buttonHref: "/products"
+    buttonHref: "/dashboard"
   }
 }
 
