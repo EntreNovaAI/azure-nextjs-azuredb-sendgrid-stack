@@ -5,7 +5,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import axios from 'axios'
+import Link from 'next/link'
+import { AuthLayout } from '@/src/layouts'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label } from '@components/ui'
+import { requestPasswordResetAction } from '@lib/auth/auth-actions'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -24,127 +27,103 @@ export default function ForgotPasswordPage() {
     setSuccess('')
 
     try {
-      const response = await axios.post('/api/auth/forgot-password', {
-        email,
-      })
+      // Call Server Action to request password reset
+      const result = await requestPasswordResetAction(email)
 
-      if (response.status === 200) {
-        setSuccess(response.data.message || 'If an account with this email exists, a password reset email has been sent.')
+      if (result.success) {
+        setSuccess(result.message || 'If an account with this email exists, a password reset email has been sent.')
         setEmailSent(true)
+      } else {
+        setError(result.error || 'Failed to send password reset email')
       }
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const data = error.response.data
-        setError(data.error || 'Failed to send password reset email')
-      } else {
-        setError('An unexpected error occurred. Please try again.')
-      }
+      console.error('Password reset request error:', error)
+      setError('An unexpected error occurred. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Handle back to sign in
-  const handleBackToSignIn = () => {
-    router.push('/auth/signup')
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <AuthLayout>
+      <div className="space-y-6">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Forgot Password
-          </h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <h1 className="text-3xl font-bold">Forgot Password</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             Enter your email address and we'll send you a link to reset your password
           </p>
         </div>
 
-        {/* Form */}
-        <div className="bg-white rounded-lg shadow-md p-8">
-          {!emailSent ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Email field */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="your@email.com"
-                />
-              </div>
-
-              {/* Error message */}
-              {error && (
-                <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-sm">
-                  {error}
+        {/* Form Card */}
+        <Card>
+          <CardContent className="pt-6">
+            {!emailSent ? (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Email field */}
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                    required
+                    placeholder="your@email.com"
+                  />
                 </div>
-              )}
 
-              {/* Submit button */}
-              <button
-                type="submit"
-                disabled={isLoading || !email}
-                className={`w-full py-2 px-4 rounded-md font-medium transition-colors ${
-                  isLoading || !email
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-                } text-white`}
-              >
-                {isLoading ? 'Sending...' : 'Send Reset Email'}
-              </button>
-            </form>
-          ) : (
-            /* Success state */
-            <div className="text-center space-y-4">
-              <div className="p-3 bg-green-100 border border-green-400 text-green-700 rounded-md text-sm">
-                {success}
-              </div>
+                {/* Error message */}
+                {error && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-md text-sm">
+                    {error}
+                  </div>
+                )}
 
-              <div className="space-y-2">
-                <p className="text-sm text-gray-600">
-                  Didn't receive the email? Check your spam folder or try again.
-                </p>
-
-                <button
-                  onClick={() => setEmailSent(false)}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                {/* Submit button */}
+                <Button
+                  type="submit"
+                  disabled={isLoading || !email}
+                  className="w-full"
                 >
-                  Try different email
-                </button>
+                  {isLoading ? 'Sending...' : 'Send Reset Email'}
+                </Button>
+              </form>
+            ) : (
+              /* Success state - uses brand colors */
+              <div className="space-y-4">
+                <div className="p-3 bg-brand-secondary/10 border border-brand-secondary/20 text-green-600 dark:text-green-400 rounded-md text-sm">
+                  {success}
+                </div>
+
+                <div className="space-y-2 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Didn't receive the email? Check your spam folder or try again.
+                  </p>
+
+                  <Button
+                    variant="link"
+                    onClick={() => setEmailSent(false)}
+                    className="text-sm"
+                  >
+                    Try different email
+                  </Button>
+                </div>
               </div>
+            )}
+
+            {/* Back to sign in */}
+            <div className="mt-6 text-center">
+              <Link
+                href="/auth/signup"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ← Back to Sign In
+              </Link>
             </div>
-          )}
-
-          {/* Back to sign in */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={handleBackToSignIn}
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
-              ← Back to Sign In
-            </button>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center">
-          <button
-            onClick={() => router.push('/')}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            ← Back to Home
-          </button>
-        </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </AuthLayout>
   )
 }

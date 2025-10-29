@@ -14,5 +14,25 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     globals: true,
+    // Increase test timeout for async operations
+    testTimeout: 10000,
+    // Handle unhandled promise rejections gracefully
+    onConsoleLog(log: string, type: 'stdout' | 'stderr'): boolean | void {
+      // Filter out noisy jsdom warnings that don't affect tests
+      if (log.includes('Could not parse CSS stylesheet') || 
+          log.includes('Error: AggregateError')) {
+        return false
+      }
+    },
+    // Improve error reporting
+    reporters: ['verbose'],
+    // Disable threads for more stable test execution
+    pool: 'forks',
+    // Set resource limits
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
   },
 })

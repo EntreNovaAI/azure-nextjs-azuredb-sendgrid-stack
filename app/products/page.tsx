@@ -2,11 +2,11 @@
 
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import axios from 'axios'
-import { ProductCard, LoadingState, AuthRequiredState, AccessNotice } from '@/app/_components/ui'
-import { UserInfo } from '@/app/_components/auth'
-import { Calculator } from '@/app/_components/features'
-import { products } from '@/app/_data/products'
+import { MainLayout } from '@/src/layouts'
+import { ProductCard, LoadingState, AuthRequiredState, AccessNotice, UserInfo, Card, CardContent } from '@components/ui'
+import { Calculator } from '@/app/products/components'
+import { products } from '@/app/products/_data/products'
+import { getUserAction } from '@lib/user/user-actions'
 
 /**
  * Protected Products Page
@@ -32,8 +32,13 @@ export default function ProductsPage() {
    */
   const fetchUserDetails = async () => {
     try {
-      const response = await axios.get('/api/user')
-      setUser(response.data)
+      // Use Server Action instead of axios
+      const result = await getUserAction()
+      if (result.success) {
+        setUser(result.data)
+      } else {
+        console.error('Error fetching user details:', result.error)
+      }
     } catch (error) {
       console.error('Error fetching user details:', error)
     } finally {
@@ -56,76 +61,79 @@ export default function ProductsPage() {
   const accessLevelDisplay = accessLevel.charAt(0).toUpperCase() + accessLevel.slice(1)
 
   return (
-    // Tailwind migration: replaces `.page-container`
-    <div className="max-w-[1200px] mx-auto px-4">
-      {/* Access Level Banner */}
-      <div className={`p-6 rounded-xl mb-8 border-2 ${
-        accessLevel === 'free' ? 'bg-slate-100 border-slate-400 text-slate-600' :
-        accessLevel === 'basic' ? 'bg-amber-100 border-amber-400 text-amber-900' :
-        'bg-violet-100 border-violet-500 text-violet-900'
-      }`}>
-        <div className="flex justify-between items-center flex-wrap gap-4">
-          <div>
-            <h2 className="text-xl mb-2">
-              {accessLevel === 'free' && '🆓 Free Version'}
-              {accessLevel === 'basic' && '⭐ Basic Version'}
-              {accessLevel === 'premium' && '🏢 Premium Version'}
-            </h2>
-            <p className="opacity-80 m-0">
-              {accessLevel === 'free' && 'You have access to basic calculator functions'}
-              {accessLevel === 'basic' && 'You have access to memory functions and calculation history'}
-              {accessLevel === 'premium' && 'You have access to all advanced calculator features'}
-            </p>
-          </div>
-          {accessLevel !== 'premium' && (
-            <div className="text-right">
-              <p className="m-0 text-sm">Want more features?</p>
-              <a href="#upgrade-section" className="inline-block px-3 py-2 rounded font-semibold bg-white/20 hover:bg-white/30 transition">
-                Upgrade Now →
-              </a>
+    <MainLayout>
+      <div className="py-8">
+        {/* Access Level Banner */}
+        <Card className={`mb-8 ${
+          accessLevel === 'free' ? 'border-muted' :
+          accessLevel === 'basic' ? 'border-amber-400' :
+          'border-violet-500'
+        }`}>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-center flex-wrap gap-4">
+              <div>
+                <h2 className="text-xl mb-2">
+                  {accessLevel === 'free' && '🆓 Free Version'}
+                  {accessLevel === 'basic' && '⭐ Basic Version'}
+                  {accessLevel === 'premium' && '🏢 Premium Version'}
+                </h2>
+                <p className="text-muted-foreground m-0">
+                  {accessLevel === 'free' && 'You have access to basic calculator functions'}
+                  {accessLevel === 'basic' && 'You have access to memory functions and calculation history'}
+                  {accessLevel === 'premium' && 'You have access to all advanced calculator features'}
+                </p>
+              </div>
+              {accessLevel !== 'premium' && (
+                <div className="text-right">
+                  <p className="m-0 text-sm text-muted-foreground">Want more features?</p>
+                  <a href="#upgrade-section" className="inline-block px-3 py-2 rounded font-semibold bg-accent text-accent-foreground hover:bg-accent/80 transition">
+                    Upgrade Now →
+                  </a>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
+          </CardContent>
+        </Card>
 
-      {/* Calculator Section */}
-      <div className="mb-12">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl mb-2 text-slate-200">Calculator Demo</h2>
-          <p className="text-slate-300">Try our calculator with features based on your current access level</p>
-        </div>
-        
-        <Calculator accessLevel={accessLevel} />
-      </div>
-
-      {/* Products Section */}
-      <div id="upgrade-section" className="mb-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-slate-800 mb-4">Upgrade Your Plan</h2>
-          <p className="text-yellow-200">Unlock more calculator features with our premium plans</p>
+        {/* Calculator Section */}
+        <div className="mb-12">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl mb-2">Calculator Demo</h2>
+            <p className="text-muted-foreground">Try our calculator with features based on your current access level</p>
+          </div>
           
-          {/* Display user information */}
-          <UserInfo user={user} />
+          <Calculator accessLevel={accessLevel} />
         </div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-8 mb-12">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              title={product.title}
-              description={product.description}
-              features={product.features}
-              price={product.price}
-              variant={product.variant}
-              productId={product.id}
-            />
-          ))}
-        </div>
+        {/* Products Section */}
+        <div id="upgrade-section" className="mb-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Upgrade Your Plan</h2>
+            <p className="text-muted-foreground">Unlock more calculator features with our premium plans</p>
+            
+            {/* Display user information */}
+            <UserInfo user={user} />
+          </div>
 
-        {/* Access Level Notice */}
-        <AccessNotice accessLevel={accessLevel} />
+          {/* Product Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                title={product.title}
+                description={product.description}
+                features={product.features}
+                price={product.price}
+                variant={product.variant}
+                productId={product.id}
+              />
+            ))}
+          </div>
+
+          {/* Access Level Notice */}
+          <AccessNotice accessLevel={accessLevel} />
+        </div>
       </div>
-    </div>
+    </MainLayout>
   )
 }

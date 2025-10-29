@@ -1,6 +1,6 @@
-import { AuthProvider } from '@/app/_components/auth'
-import { Navigation } from '@/app/_components/ui'
-import './globals.css'
+import { AuthProvider } from '@/app/auth/components'
+import { RootLayout } from '@/src/layouts'
+import '@src/styles/globals.css'
 
 export const metadata = {
   title: 'Azure Next Stack - Auth Demo',
@@ -9,27 +9,19 @@ export const metadata = {
 
 /**
  * Root Layout Component
- * Wraps the entire application with auth provider and navigation
- * Provides consistent layout structure across all pages
+ * Wraps the entire application with theme provider and auth provider
+ * Provides consistent layout structure with dark mode support
  */
-export default function RootLayout({
+export default function Layout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white antialiased">
-        <AuthProvider>
-          {/* Modern dark theme layout with gradient background */}
-          <div className="min-h-screen flex flex-col">
-            <Navigation />
-            <main className="flex-1">
-              {children}
-            </main>
-          </div>
-        </AuthProvider>
-      </body>
-    </html>
+    <RootLayout>
+      <AuthProvider>
+        {children}
+      </AuthProvider>
+    </RootLayout>
   )
 }

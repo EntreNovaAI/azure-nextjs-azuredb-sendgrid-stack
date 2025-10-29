@@ -15,7 +15,8 @@ export default function CheckoutLayout({
 }) {
   return (
     <div className="checkout-layout">
-      <div className="min-h-screen bg-gray-50 py-8">
+      {/* Uses theme background colors */}
+      <div className="min-h-screen bg-light-bg-alt dark:bg-dark-bg-alt py-8">
         {children}
       </div>
     </div>

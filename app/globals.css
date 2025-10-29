@@ -1,6 +1,0 @@
-@import "tailwindcss";
-
-/* Note:
-   Legacy global CSS rules were removed after migrating components to Tailwind utilities.
-   Keep this file minimal; add only project-wide styles that are hard to express with utilities.
-*/

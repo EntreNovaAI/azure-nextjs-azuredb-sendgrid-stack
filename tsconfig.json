@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "forceConsistentCasingInFileNames": true,
     "lib": [
       "dom",
@@ -25,6 +26,39 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@src/*": [
+        "src/*"
+      ],
+      "@lib/*": [
+        "src/lib/*"
+      ],
+      "@components/*": [
+        "src/components/*"
+      ],
+      "@ui/*": [
+        "src/components/ui/*"
+      ],
+      "@app/*": [
+        "app/*"
+      ],
+      "@auth/*": [
+        "app/auth/*"
+      ],
+      "@api/*": [
+        "app/api/*"
+      ],
+      "@products/*": [
+        "app/products/*"
+      ],
+      "@types/*": [
+        "src/types/*"
+      ],
+      "@data/*": [
+        "src/data/*"
+      ],
+      "@constants/*": [
+        "src/constants/*"
       ]
     },
     "target": "ES2017"

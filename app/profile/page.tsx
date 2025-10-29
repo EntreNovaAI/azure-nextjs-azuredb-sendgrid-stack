@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next"
 import { redirect } from "next/navigation"
-import { getUserByEmail, createUser } from "@/app/_lib/kysely/repositories/user-repo"
+import { getUserByEmail, createUser } from "@lib/kysely/repositories/user-repo"
 import { ProfileClient } from "./profile-client"
 
 /**

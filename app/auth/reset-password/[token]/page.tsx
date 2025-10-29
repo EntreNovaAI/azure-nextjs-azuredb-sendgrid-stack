@@ -5,9 +5,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import axios from 'axios'
-import { validatePasswordStrength } from '@/app/_lib/auth/password-utils'
-import { PasswordInput } from '@/app/_components/ui'
+import { validatePasswordStrength } from '@lib/auth/password-utils'
+import { PasswordInput } from '@components/ui'
+import { resetPasswordAction } from '@lib/auth/auth-actions'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -60,26 +60,22 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      const response = await axios.post('/api/auth/reset-password', {
-        token,
-        password,
-      })
+      // Call Server Action to reset password
+      const result = await resetPasswordAction(token, password)
 
-      if (response.status === 200) {
-        setSuccess(response.data.message || 'Password has been successfully reset!')
+      if (result.success) {
+        setSuccess(result.message || 'Password has been successfully reset!')
 
         // Redirect to sign in page after 3 seconds
         setTimeout(() => {
           router.push('/auth/signup')
         }, 3000)
+      } else {
+        setError(result.error || 'Failed to reset password')
       }
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        const data = error.response.data
-        setError(data.error || 'Failed to reset password')
-      } else {
-        setError('An unexpected error occurred. Please try again.')
-      }
+      console.error('Password reset error:', error)
+      setError('An unexpected error occurred. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -90,24 +86,24 @@ export default function ResetPasswordPage() {
     router.push('/auth/forgot-password')
   }
 
-  // Show error state for invalid token
+  // Show error state for invalid token - uses brand colors
   if (isValidToken === false) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-brand-primary/10 to-brand-secondary/10 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <div className="bg-light-bg dark:bg-dark-bg rounded-lg shadow-md p-8 text-center">
             <div className="text-red-600 mb-4">
               <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Invalid Reset Link</h1>
-            <p className="text-gray-600 mb-6">
+            <h1 className="text-2xl font-bold text-light-text dark:text-dark-text mb-2">Invalid Reset Link</h1>
+            <p className="text-light-text-secondary dark:text-dark-text-secondary mb-6">
               {error || 'This password reset link is invalid or has expired.'}
             </p>
             <button
               onClick={handleBackToForgotPassword}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+              className="w-full bg-brand-primary hover:opacity-90 text-white font-medium py-2 px-4 rounded-md transition-colors"
             >
               Request New Reset Link
             </button>
@@ -118,20 +114,20 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-brand-primary/10 to-brand-secondary/10 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        {/* Header */}
+        {/* Header - uses theme colors */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-light-text dark:text-dark-text">
             Reset Password
           </h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-light-text-secondary dark:text-dark-text-secondary">
             Enter your new password below
           </p>
         </div>
 
-        {/* Form */}
-        <div className="bg-white rounded-lg shadow-md p-8">
+        {/* Form - uses theme colors */}
+        <div className="bg-light-bg dark:bg-dark-bg rounded-lg shadow-md p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Password field with visibility toggle */}
             <PasswordInput
@@ -166,36 +162,36 @@ export default function ResetPasswordPage() {
               </div>
             )}
 
-            {/* Submit button */}
+            {/* Submit button - uses brand colors */}
             <button
               type="submit"
               disabled={isLoading || !password || !confirmPassword}
               className={`w-full py-2 px-4 rounded-md font-medium transition-colors ${
                 isLoading || !password || !confirmPassword
                   ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                  : 'bg-brand-primary hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2'
               } text-white`}
             >
               {isLoading ? 'Resetting Password...' : 'Reset Password'}
             </button>
           </form>
 
-          {/* Back to forgot password */}
+          {/* Back to forgot password - uses theme colors */}
           <div className="mt-6 text-center">
             <button
               onClick={handleBackToForgotPassword}
-              className="text-sm text-gray-500 hover:text-gray-700"
+              className="text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text"
             >
               ← Back to Forgot Password
             </button>
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer - uses theme colors */}
         <div className="text-center">
           <button
             onClick={() => router.push('/')}
-            className="text-sm text-gray-500 hover:text-gray-700"
+            className="text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text"
           >
             ← Back to Home
           </button>

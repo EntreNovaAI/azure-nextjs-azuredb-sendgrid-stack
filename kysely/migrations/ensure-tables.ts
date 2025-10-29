@@ -2,7 +2,7 @@
 // This uses T-SQL IF NOT EXISTS guards because SQL Server lacks CREATE TABLE IF NOT EXISTS
 
 import { sql } from 'kysely'
-import { db } from '@/app/_lib/kysely'
+import { db } from '@lib/kysely'
 
 /**
  * Create the dbo.[User] table if it doesn't exist.

@@ -2,8 +2,8 @@ import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { NextAuthOptions } from "next-auth"
-import { getUserByEmail, updateUserById, createUser, getUserByEmailWithPassword } from "@/app/_lib/kysely/repositories/user-repo"
-import { verifyPassword } from "@/app/_lib/auth/password-utils"
+import { getUserByEmail, updateUserById, createUser, getUserByEmailWithPassword } from "@lib/kysely/repositories/user-repo"
+import { verifyPassword } from "@lib/auth/password-utils"
 
 // Export auth options for use in other API routes
 export const authOptions: NextAuthOptions = {
