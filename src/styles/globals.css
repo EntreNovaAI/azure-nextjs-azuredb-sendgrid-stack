@@ -85,6 +85,13 @@
   --color-sidebar-border: var(--sidebar-border);
 
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Font families - defined for use throughout the app */
+  --font-family-primary: var(--font-primary), sans-serif;
+
+  --font-family-heading: var(--font-heading), sans-serif;
+
+  --font-family-mono: var(--font-mono), monospace;
 }
 
 /* ---break---
@@ -234,5 +241,14 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-primary), sans-serif;
+  }
+  /* Apply heading font to all heading elements */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading), sans-serif;
+  }
+  /* Apply mono font to code elements */
+  code, pre, kbd, samp {
+    font-family: var(--font-mono), monospace;
   }
 }

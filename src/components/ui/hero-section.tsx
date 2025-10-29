@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Session } from 'next-auth'
 import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
 import { Button } from './button'
 import { getColors } from '@constants/colors'
 
@@ -23,6 +24,11 @@ interface HeroSectionProps {
   className?: string
 }
 
+/**
+ * HeroContent type definition
+ * Used to configure hero section content for different pages
+ * Supports authentication-aware messaging
+ */
 export interface HeroContent {
   title: string
   subtitle: string
@@ -38,43 +44,12 @@ export interface HeroContent {
   }
 }
 
-// Homepage hero content
-export const homeHeroContent: HeroContent = {
-  title: "🚀 Azure Next Stack",
-  subtitle: "Secure subscription platform with Stripe integration",
-  authenticatedContent: {
-    message: "",
-    buttonText: "View Premium Products →",
-    buttonHref: "/dashboard"
-  },
-  unauthenticatedContent: {
-    message: "Sign in to access our premium subscription plans",
-    buttonText: "Explore Products →", 
-    buttonHref: "/dashboard"
-  }
-}
-
-// Products page hero content (example for future use)
-export const productsHeroContent: HeroContent = {
-  title: "🛍️ Premium Products",
-  subtitle: "Choose the perfect plan for your needs",
-  authenticatedContent: {
-    message: "Select your subscription plan below.",
-    buttonText: "View Calculator →",
-    buttonHref: "#calculator"
-  },
-  unauthenticatedContent: {
-    message: "Sign in to purchase and access premium features.",
-    buttonText: "Sign In →",
-    buttonHref: "/api/auth/signin"
-  }
-}
-
 /**
  * HeroSection Component
  * Reusable hero section with authentication-aware content
  * Displays different messages and CTAs based on user authentication status
  * Uses centralized color system from @constants/colors
+ * Implements mounted state to prevent hydration mismatches
  */
 export function HeroSection({
   title,
@@ -87,7 +62,16 @@ export function HeroSection({
 }: HeroSectionProps) {
   const content = session ? authenticatedContent : unauthenticatedContent
   const { resolvedTheme } = useTheme()
-  const colors = getColors(resolvedTheme === 'dark')
+  // Track mounted state to prevent hydration mismatch
+  const [mounted, setMounted] = useState(false)
+  
+  // Set mounted to true after component mounts on client
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  
+  // Use light theme as default during SSR and initial render to prevent hydration errors
+  const colors = getColors(mounted ? resolvedTheme === 'dark' : false)
   
   return (
     <div className={className}>

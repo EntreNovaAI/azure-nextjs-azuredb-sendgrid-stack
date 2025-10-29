@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
 import { Separator } from '@components/ui/separator'
 import { getColors } from '@constants/colors'
 
@@ -10,11 +11,21 @@ import { getColors } from '@constants/colors'
  * Site-wide footer with links and copyright information
  * Adapts styling based on current theme (light/dark)
  * Uses centralized color system from @constants/colors
+ * Implements mounted state to prevent hydration mismatches
  */
 export function Footer() {
   const currentYear = new Date().getFullYear()
   const { resolvedTheme } = useTheme()
-  const colors = getColors(resolvedTheme === 'dark')
+  // Track mounted state to prevent hydration mismatch
+  const [mounted, setMounted] = useState(false)
+  
+  // Set mounted to true after component mounts on client
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  
+  // Use light theme as default during SSR and initial render to prevent hydration errors
+  const colors = getColors(mounted ? resolvedTheme === 'dark' : false)
 
   return (
     <footer className="w-full border-t bg-background">

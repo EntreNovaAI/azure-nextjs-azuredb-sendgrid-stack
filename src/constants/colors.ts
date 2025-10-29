@@ -7,41 +7,41 @@
 // Light Mode Colors
 export const lightColors = {
   // Primary brand color - used for main actions and highlights
-  primary: "#37353E", 
+  primary: "#2A004E", // Deep purple - bold and sophisticated
   
   // Secondary color - used for supporting elements
-  secondary: '#44444E', 
+  secondary: '#500073', // Medium purple - rich and vibrant
   
   // Accent color - used for special highlights and CTAs
-  accent: '#715A5A', 
+  accent: '#C62300', // Deep red - powerful call-to-action color
   
   // Background colors
-  background: '#ECF4E8', 
-  backgroundAlt: '#FCF9EA', 
+  background: '#FFFFFF', // Clean white background
+  backgroundAlt: '#F8F7FA', // Subtle light purple tint
   
   // Text colors
-  text: '#222831',
-  textSecondary: '#DFD0B8', 
+  text: '#1A1A1A', // Near black for primary text
+  textSecondary: '#F14A00', // Vibrant orange for highlights and secondary elements 
 }
 
 // Dark Mode Colors
 export const darkColors = {
   // Primary brand color - slightly adjusted for dark mode
-  primary: '#fb923c', // Orange-400
+  primary: '#6B21A8', // Lighter purple for better contrast in dark mode
   
   // Secondary color
-  secondary: '#f472b6', // Pink-400
+  secondary: '#7C3AED', // Vibrant purple for supporting elements
   
   // Accent color
-  accent: '#fbbf24', // Yellow-400
+  accent: '#EF4444', // Bright red for CTAs in dark mode
   
   // Background colors
-  background: '#0f172a', // Slate-900
-  backgroundAlt: '#1e293b', // Slate-800
+  background: '#0F0A1A', // Very dark purple-black
+  backgroundAlt: '#1A0F2E', // Dark purple
   
   // Text colors
-  text: '#f8fafc', // Slate-50
-  textSecondary: '#cbd5e1', // Slate-300
+  text: '#F9FAFB', // Off-white for primary text
+  textSecondary: '#FB923C', // Warm orange for secondary elements
 }
 
 // Export a function to get colors based on theme

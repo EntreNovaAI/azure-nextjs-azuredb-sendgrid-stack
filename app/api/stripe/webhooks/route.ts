@@ -3,8 +3,8 @@
 // Keeps only webhook verification and HTTP handling
 // Business logic delegated to stripe-service
 
-import Stripe from "stripe"
 import { NextRequest, NextResponse } from "next/server"
+import { getStripeForWebhooks } from "@lib/stripe/stripe-client"
 import { handleStripeWebhookEvent } from "@lib/stripe/stripe-service"
 
 export const runtime = "nodejs"
@@ -13,10 +13,11 @@ export const runtime = "nodejs"
  * Stripe Webhook Handler
  * Verifies webhook signature and delegates event processing to service layer
  * This endpoint must remain as an API route for Stripe to POST to
+ * Uses centralized Stripe client to prevent API version issues
  */
 export async function POST(req: NextRequest) {
-  // Initialize Stripe for webhook verification
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-08-27.basil" })
+  // Get Stripe instance from centralized client
+  const stripe = getStripeForWebhooks()
   
   // Get signature from headers
   const sig = req.headers.get("stripe-signature")!

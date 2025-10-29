@@ -1,4 +1,5 @@
 const { lightColors, darkColors } = require('./src/constants/colors')
+const { fontVariables } = require('./src/constants/fonts')
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -42,6 +43,13 @@ module.exports = {
           text: darkColors.text,
           'text-secondary': darkColors.textSecondary,
         },
+      },
+      // Custom font families from fonts.ts
+      // Usage: font-primary, font-heading, font-mono
+      fontFamily: {
+        primary: ['var(--font-primary)', 'sans-serif'],
+        heading: ['var(--font-heading)', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
       },
     },
   },

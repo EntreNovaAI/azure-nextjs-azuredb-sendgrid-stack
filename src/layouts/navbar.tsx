@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
 import { Menu } from 'lucide-react'
 import { LoginButton } from '@auth/components'
 import { 
@@ -21,11 +22,21 @@ import { getColors } from '@constants/colors'
  * Shows protected links only when user is authenticated
  * Includes theme toggle for dark/light mode switching
  * Uses centralized color system from @constants/colors
+ * Implements mounted state to prevent hydration mismatches
  */
 export function Navbar() {
   const { data: session } = useSession()
   const { resolvedTheme } = useTheme()
-  const colors = getColors(resolvedTheme === 'dark')
+  // Track mounted state to prevent hydration mismatch
+  const [mounted, setMounted] = useState(false)
+  
+  // Set mounted to true after component mounts on client
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  
+  // Use light theme as default during SSR and initial render to prevent hydration errors
+  const colors = getColors(mounted ? resolvedTheme === 'dark' : false)
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

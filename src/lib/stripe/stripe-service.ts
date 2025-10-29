@@ -2,8 +2,8 @@
 // Core business logic for Stripe operations
 // Handles checkout sessions, subscription management, and webhook events
 
-import Stripe from 'stripe'
 import { getServerSession } from 'next-auth'
+import { stripe, type Stripe } from '@lib/stripe/stripe-client'
 import {
   findUserByStripeCustomerId,
   getUserByEmail,
@@ -14,10 +14,8 @@ import {
 } from '@lib/kysely/repositories/user-repo'
 import { extractUserUpdateData } from '@lib/stripe/stripe-utils'
 
-// Initialize Stripe with secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-08-27.basil'
-})
+// Stripe client is now imported from centralized configuration
+// This prevents API version issues and keeps configuration in one place
 
 // Type for service responses
 type ServiceResponse<T = any> = {

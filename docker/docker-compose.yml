@@ -1,0 +1,75 @@
+# Docker Compose configuration for Azure Next.js Stack
+# This file orchestrates the build and deployment of the application
+# with proper environment variable injection
+
+version: "3.8"
+
+services:
+  # Main Next.js application service
+  app:
+    # Build configuration
+    build:
+      # Context is the project root (parent directory)
+      context: ..
+      # Dockerfile is in the docker folder
+      dockerfile: ./docker/Dockerfile
+      # Pass build-time arguments if needed
+      # These can be used in Dockerfile with ARG instruction
+      args:
+        - NODE_ENV=production
+
+    # Container name for easy reference
+    container_name: azure-nextjs-app
+
+    # Port mapping: host:container
+    # Access the app at http://localhost:3000
+    ports:
+      - "3000:3000"
+
+    # Environment variables loaded from .env.production
+    # These are available at runtime (path relative to docker-compose.yml location)
+    env_file:
+      - ../.env.production
+
+    # Optional: Override or add specific environment variables
+    # environment:
+    #   - NODE_ENV=production
+    #   - CUSTOM_VAR=value
+
+    # Restart policy for production reliability
+    restart: unless-stopped
+
+    # Health check to ensure the app is running properly
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/api/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Resource limits (optional but recommended for production)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 1G
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 512M
+# Optional: Add volumes for persistent data
+# volumes:
+#   app-data:
+
+# Optional: Custom networks
+# networks:
+#   app-network:
+#     driver: bridge
+

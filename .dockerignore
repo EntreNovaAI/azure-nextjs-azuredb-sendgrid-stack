@@ -1,0 +1,69 @@
+# Docker Ignore File
+# This file MUST be in the project root (not in docker/ folder)
+# Docker looks for .dockerignore in the build context root
+# Build context is set to project root in docker-compose.yml
+
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store
+
+# Testing
+coverage
+.nyc_output
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__
+tests
+
+# Next.js build output
+.next
+out
+build
+dist
+
+# Development and test environment files
+# Note: .env.production is NOT ignored as we need it for the build
+.env*.local
+.env.development
+.env.test
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Documentation
+README.md
+docs
+*.md
+
+# Docker files (avoid recursive copying)
+# These are in the docker/ folder and shouldn't be copied into the image
+docker/
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Config files
+.editorconfig
+.prettierrc
+.eslintrc*
+

@@ -62,7 +62,7 @@ async function checkStatus() {
     console.log('Checking database tables...\n')
     
     // Check if PasswordResetToken table exists
-    const tableCheck = await sql`
+    const tableCheck = await sql<{ TableExists: number }>`
       SELECT 
         CASE WHEN EXISTS (
           SELECT * FROM sys.objects 
@@ -73,7 +73,7 @@ async function checkStatus() {
     console.log('PasswordResetToken table exists:', tableCheck.rows[0])
     
     // Check migration tracking table
-    const migrationTableCheck = await sql`
+    const migrationTableCheck = await sql<{ MigrationTableExists: number }>`
       SELECT 
         CASE WHEN EXISTS (
           SELECT * FROM sys.objects 

@@ -1,17 +1,21 @@
 // Comprehensive sign-up page with authentication method selection
 // Users can choose between email/password registration or Google OAuth
+// Integrated with centralized color system for consistent branding
 
 'use client'
 
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { AuthLayout } from '@/src/layouts'
 import { PasswordInput, Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Separator } from '@components/ui'
 import { registerUserAction } from '@lib/auth/auth-actions'
+import { getColors } from '@constants/colors'
 
 export default function SignUpPage() {
+  // State management for form and UI
   const [selectedMethod, setSelectedMethod] = useState<'email' | 'google' | null>(null)
   const [isLogin, setIsLogin] = useState(false) // Toggle between signup and login
   const [email, setEmail] = useState('')
@@ -21,9 +25,14 @@ export default function SignUpPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   
+  // Router and theme hooks
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/'
+  const { resolvedTheme } = useTheme()
+  
+  // Get colors based on current theme for consistent branding
+  const colors = getColors(resolvedTheme === 'dark')
 
   // Handle Google OAuth sign-in
   const handleGoogleSignIn = () => {
@@ -82,9 +91,14 @@ export default function SignUpPage() {
   return (
     <AuthLayout showBackLink={false}>
       <div className="space-y-6">
-        {/* Header */}
+        {/* Header - uses brand primary color for emphasis */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold">Welcome!</h1>
+          <h1 
+            className="text-3xl font-bold" 
+            style={{ color: colors.primary }}
+          >
+            Welcome!
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Choose how you'd like to get started
           </p>
@@ -97,12 +111,22 @@ export default function SignUpPage() {
               <CardTitle className="text-center">Sign Up or Sign In</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Google OAuth Option */}
+              {/* Google OAuth Option - uses shadcn Button with brand colors on hover */}
               <Button
                 onClick={handleGoogleSignIn}
                 variant="outline"
-                className="w-full"
+                className="w-full transition-all duration-200"
                 size="lg"
+                style={{
+                  // Apply subtle brand color on hover
+                  ['--hover-bg' as string]: `${colors.primary}10`
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = `${colors.primary}10`
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = ''
+                }}
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                   <path
@@ -133,11 +157,21 @@ export default function SignUpPage() {
                 </div>
               </div>
 
-              {/* Email Option */}
+              {/* Email Option - primary shadcn Button styled with brand colors */}
               <Button
                 onClick={() => setSelectedMethod('email')}
                 className="w-full"
                 size="lg"
+                style={{
+                  backgroundColor: colors.primary,
+                  color: resolvedTheme === 'dark' ? colors.text : '#ffffff'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = '0.9'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = '1'
+                }}
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
@@ -207,25 +241,53 @@ export default function SignUpPage() {
                   showHint={!isLogin}
                 />
 
-                {/* Error message */}
+                {/* Error message - uses brand accent color */}
                 {error && (
-                  <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-md text-sm">
+                  <div 
+                    className="p-3 rounded-md text-sm font-medium"
+                    style={{
+                      backgroundColor: `${colors.accent}15`,
+                      borderWidth: '1px',
+                      borderStyle: 'solid',
+                      borderColor: `${colors.accent}40`,
+                      color: colors.accent
+                    }}
+                  >
                     {error}
                   </div>
                 )}
 
-                {/* Success message - uses brand colors */}
+                {/* Success message - uses brand secondary color */}
                 {success && (
-                  <div className="p-3 bg-brand-secondary/10 border border-brand-secondary/20 text-green-600 dark:text-green-400 rounded-md text-sm">
+                  <div 
+                    className="p-3 rounded-md text-sm font-medium"
+                    style={{
+                      backgroundColor: `${colors.secondary}15`,
+                      borderWidth: '1px',
+                      borderStyle: 'solid',
+                      borderColor: `${colors.secondary}40`,
+                      color: colors.secondary
+                    }}
+                  >
                     {success}
                   </div>
                 )}
 
-                {/* Submit button */}
+                {/* Submit button - styled with brand primary color */}
                 <Button
                   type="submit"
                   disabled={isLoading}
                   className="w-full"
+                  style={{
+                    backgroundColor: isLoading ? `${colors.primary}70` : colors.primary,
+                    color: resolvedTheme === 'dark' ? colors.text : '#ffffff'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isLoading) e.currentTarget.style.opacity = '0.9'
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isLoading) e.currentTarget.style.opacity = '1'
+                  }}
                 >
                   {isLoading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
                 </Button>
