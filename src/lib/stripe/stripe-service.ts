@@ -12,7 +12,7 @@ import {
   createUser,
   updateUserById
 } from '@lib/kysely/repositories/user-repo'
-import { extractUserUpdateData } from '@lib/stripe/stripe-utils'
+import { extractUserUpdateData, sanitizeCustomerName } from '@lib/stripe/stripe-utils'
 
 // Stripe client is now imported from centralized configuration
 // This prevents API version issues and keeps configuration in one place
@@ -52,6 +52,59 @@ function checkRateLimit(userId: string): boolean {
 }
 
 /**
+ * Fetch the active price ID for a given Stripe product ID
+ * This allows us to store product IDs in env vars and dynamically get the price
+ * Stripe requires price IDs for checkout, but products can have multiple prices
+ * We return the first active price found for the product
+ */
+async function getPriceIdFromProductId(stripeProductId: string): Promise<string | null> {
+  try {
+    console.log('Fetching price for product:', stripeProductId)
+    
+    // Query Stripe API for all active prices associated with this product
+    const prices = await stripe.prices.list({
+      product: stripeProductId,
+      active: true,
+      limit: 1 // We only need the first active price
+    })
+    
+    // Return the first active price ID, or null if none found
+    if (prices.data.length > 0) {
+      const priceId = prices.data[0].id
+      console.log('Found price ID:', priceId)
+      return priceId
+    }
+    
+    console.log('No active prices found for product:', stripeProductId)
+    return null
+  } catch (error) {
+    console.error('Error fetching price for product:', stripeProductId, error)
+    return null
+  }
+}
+
+/**
+ * Fetch price IDs for both basic and premium products from environment
+ * Used by webhook handlers to compare incoming Stripe price IDs with our products
+ * Returns an object with basic and premium price IDs, or null if not found
+ */
+async function getConfiguredPriceIds(): Promise<{ basic: string | null; premium: string | null }> {
+  const basicProductId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC
+  const premiumProductId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM
+  
+  // Fetch price IDs for both products in parallel for efficiency
+  const [basicPriceId, premiumPriceId] = await Promise.all([
+    basicProductId ? getPriceIdFromProductId(basicProductId) : Promise.resolve(null),
+    premiumProductId ? getPriceIdFromProductId(premiumProductId) : Promise.resolve(null)
+  ])
+  
+  return {
+    basic: basicPriceId,
+    premium: premiumPriceId
+  }
+}
+
+/**
  * Create a Stripe checkout session
  * Generates a session for embedded checkout flow
  * Requires authenticated user and valid product ID
@@ -74,22 +127,34 @@ export async function createCheckoutSession(
 
     console.log('Rate limit check passed')
 
-    // Determine which Stripe price ID to use based on the product type
-    let priceId: string | null = null
+    // Get the Stripe product ID from environment variables
+    // We now store product IDs (prod_xxx) instead of price IDs
+    let stripeProductId: string | null = null
 
     if (productId === 'basic') {
-      priceId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC || null
+      stripeProductId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC || null
     } else if (productId === 'premium') {
-      priceId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM || null
+      stripeProductId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM || null
     } else {
       console.log('Invalid product ID:', productId)
     }
 
-    // Validate that we have a valid price ID
-    if (!priceId) {
+    // Validate that we have a valid product ID
+    if (!stripeProductId) {
       return {
         success: false,
         error: `Invalid product ID "${productId}" or missing Stripe configuration`
+      }
+    }
+
+    // Fetch the active price ID for this product from Stripe
+    // This allows flexibility - products can have multiple prices over time
+    const priceId = await getPriceIdFromProductId(stripeProductId)
+
+    if (!priceId) {
+      return {
+        success: false,
+        error: `No active price found for product "${productId}"`
       }
     }
 
@@ -414,6 +479,17 @@ export async function getSessionStatus(sessionId: string): Promise<ServiceRespon
     console.log('Customer ID:', session.customer)
     console.log('=== END STRIPE SESSION ===')
 
+    // Sanitize customer name to prevent credit card numbers from being exposed
+    const rawCustomerName = session.customer_details?.name || null
+    const sanitizedCustomerName = sanitizeCustomerName(rawCustomerName)
+    
+    if (rawCustomerName && !sanitizedCustomerName) {
+      console.warn('Filtered out invalid customer name from session status:', {
+        sessionId,
+        reason: 'Name failed validation (likely credit card number or invalid format)'
+      })
+    }
+
     // Prepare the response data
     const responseData = {
       // Basic status info
@@ -422,7 +498,7 @@ export async function getSessionStatus(sessionId: string): Promise<ServiceRespon
 
       // Customer information
       customer_email: session.customer_details?.email || null,
-      customer_name: session.customer_details?.name || null,
+      customer_name: sanitizedCustomerName,
       customer_id:
         typeof session.customer === 'string' ? session.customer : session.customer?.id || null,
 
@@ -622,19 +698,20 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
           expand: ['line_items', 'customer']
         })
 
-        // Get Stripe price IDs from environment variables
-        const basicPriceId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC
-        const premiumPriceId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM
+        // Use product IDs directly instead of fetching price IDs
+        // Product IDs are stable, while price IDs can change over time
+        const basicProductId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC
+        const premiumProductId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM
 
-        // Extract user update data from session
+        // Extract user update data from session using product IDs
         const updateData = extractUserUpdateData(
           {
             customer_id: fullSession.customer,
             customer_email: fullSession.customer_details?.email,
             line_items: fullSession.line_items?.data || []
           },
-          basicPriceId,
-          premiumPriceId
+          basicProductId,
+          premiumProductId
         )
 
         // Update user in database if we have a valid Stripe customer ID
@@ -663,20 +740,26 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
         if (subscription.status === 'active' && subscription.customer) {
           console.log('Processing subscription update:', subscription.id)
 
-          // Get Stripe price IDs from environment variables
-          const basicPriceId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC
-          const premiumPriceId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM
+          // Use product IDs directly - they are stable while price IDs can change
+          const basicProductId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC
+          const premiumProductId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM
 
-          // Determine access level from subscription items
+          // Determine access level from subscription items using product IDs
           let accessLevel = 'free'
           for (const item of subscription.items.data) {
             const priceId = item.price.id
+            // Extract product ID from price (can be string or object)
+            const productId = typeof item.price.product === 'string' 
+              ? item.price.product 
+              : item.price.product?.id
+            
             console.log('Subscription item price ID:', priceId)
+            console.log('Subscription item product ID:', productId)
 
-            if (priceId === premiumPriceId) {
+            if (productId === premiumProductId) {
               accessLevel = 'premium'
               break // Premium takes precedence
-            } else if (priceId === basicPriceId) {
+            } else if (productId === basicProductId) {
               accessLevel = 'basic'
             }
           }
@@ -707,16 +790,22 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
         if (invAny.subscription && invAny.customer) {
           const subscription = await stripe.subscriptions.retrieve(invAny.subscription as string, { expand: ['items'] })
 
-          const basicPriceId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC
-          const premiumPriceId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM
+          // Use product IDs directly - they are stable while price IDs can change
+          const basicProductId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC
+          const premiumProductId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM
 
           let accessLevel = 'free'
           for (const item of subscription.items.data) {
             const priceId = item.price.id
-            if (priceId === premiumPriceId) {
+            // Extract product ID from price (can be string or object)
+            const productId = typeof item.price.product === 'string' 
+              ? item.price.product 
+              : item.price.product?.id
+            
+            if (productId === premiumProductId) {
               accessLevel = 'premium'
               break
-            } else if (priceId === basicPriceId) {
+            } else if (productId === basicProductId) {
               accessLevel = 'basic'
             }
           }
@@ -778,10 +867,20 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
           const existingUser = await getUserByEmail(customer.email)
 
           if (!existingUser) {
+            // Sanitize customer name to prevent credit card numbers from being saved
+            const sanitizedName = sanitizeCustomerName(customer.name)
+            
+            if (customer.name && !sanitizedName) {
+              console.warn('Blocked invalid customer name during user creation:', {
+                customerId: customer.id,
+                reason: 'Name failed validation (likely credit card number or invalid format)'
+              })
+            }
+            
             // Create new user with free access level (compatible with user API route)
             const newUser = await createUser({
               email: customer.email,
-              name: customer.name || null,
+              name: sanitizedName || null,
               stripeCustomerId: customer.id,
               accessLevel: 'free'
             } as any)
@@ -817,9 +916,19 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
             updatedAt: new Date()
           }
 
-          // Update name if it's different and provided
-          if (customer.name && customer.name !== user.name) {
-            updateData.name = customer.name
+          // Sanitize and validate the customer name before updating
+          // This prevents credit card numbers from being saved as names
+          const sanitizedName = sanitizeCustomerName(customer.name)
+          
+          // Update name only if it's valid, different from current, and not a credit card number
+          if (sanitizedName && sanitizedName !== user.name) {
+            updateData.name = sanitizedName
+          } else if (customer.name && !sanitizedName) {
+            // Log when we block an invalid name (like a credit card number)
+            console.warn('Blocked invalid customer name update:', {
+              customerId: customer.id,
+              reason: 'Name failed validation (likely credit card number or invalid format)'
+            })
           }
 
           // IMPORTANT: Do NOT update email automatically to prevent login issues

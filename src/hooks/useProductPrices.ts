@@ -2,13 +2,13 @@
  * useProductPrices Hook
  * Fetches and caches product prices from Stripe API
  * Provides loading states and formatted pricing information
+ * No fallback prices - always fetches from Stripe for accuracy
  */
 
 'use client'
 
 import { useState, useEffect } from 'react'
 import { fetchStripePricesAction } from '@lib/stripe/stripe-actions'
-import { products } from '@constants/products'
 
 // Price information returned by the hook
 interface PriceInfo {
@@ -19,14 +19,14 @@ interface PriceInfo {
 
 // Hook return type
 interface UseProductPricesReturn {
-  prices: Record<string, string>  // Formatted prices like { basic: '$9.99', premium: '$29.99' }
+  prices: Record<string, string>  // Formatted prices fetched from Stripe API
   loading: boolean
   error: string | null
 }
 
 /**
  * Custom hook to fetch and format product prices from Stripe
- * Falls back to displayPrice from constants if Stripe fetch fails
+ * Always fetches from Stripe - no fallback prices for accuracy
  * Caches results to prevent repeated API calls
  */
 export function useProductPrices(): UseProductPricesReturn {
@@ -53,18 +53,18 @@ export function useProductPrices(): UseProductPricesReturn {
           if (result.data.basic) {
             formattedPrices.basic = formatPrice(result.data.basic)
           } else {
-            // Fallback to displayPrice from constants
-            const basicProduct = products.find(p => p.id === 'basic')
-            formattedPrices.basic = basicProduct?.displayPrice || '$9.99'
+            // No price found - likely misconfigured in Stripe
+            console.warn('Basic price not found in Stripe')
+            formattedPrices.basic = 'Contact Sales'
           }
           
           // Process premium price
           if (result.data.premium) {
             formattedPrices.premium = formatPrice(result.data.premium)
           } else {
-            // Fallback to displayPrice from constants
-            const premiumProduct = products.find(p => p.id === 'premium')
-            formattedPrices.premium = premiumProduct?.displayPrice || '$29.99'
+            // No price found - likely misconfigured in Stripe
+            console.warn('Premium price not found in Stripe')
+            formattedPrices.premium = 'Contact Sales'
           }
           
           // Set free price (always free)
@@ -73,10 +73,15 @@ export function useProductPrices(): UseProductPricesReturn {
           setPrices(formattedPrices)
           setError(null)
         } else {
-          // If Stripe fetch fails, use displayPrice from constants
-          console.warn('Failed to fetch prices from Stripe, using fallback prices')
-          const fallbackPrices = getFallbackPrices()
-          setPrices(fallbackPrices)
+          // If Stripe fetch fails, show error message
+          console.error('Failed to fetch prices from Stripe:', result.error)
+          
+          // Set placeholder prices to show something
+          setPrices({
+            free: 'Free',
+            basic: 'Unavailable',
+            premium: 'Unavailable'
+          })
           setError(result.error || 'Failed to fetch live prices')
         }
       } catch (err) {
@@ -85,9 +90,12 @@ export function useProductPrices(): UseProductPricesReturn {
         // Only update state if component is still mounted
         if (!isMounted) return
         
-        // Use fallback prices from constants
-        const fallbackPrices = getFallbackPrices()
-        setPrices(fallbackPrices)
+        // Set placeholder prices on error
+        setPrices({
+          free: 'Free',
+          basic: 'Unavailable',
+          premium: 'Unavailable'
+        })
         setError('Error loading prices')
       } finally {
         // Only update state if component is still mounted
@@ -137,21 +145,5 @@ function getCurrencySymbol(currency: string): string {
   }
   
   return symbols[currency.toUpperCase()] || currency.toUpperCase() + ' '
-}
-
-/**
- * Get fallback prices from product constants
- * Used when Stripe API is unavailable
- */
-function getFallbackPrices(): Record<string, string> {
-  const fallbackPrices: Record<string, string> = {}
-  
-  products.forEach(product => {
-    if (product.displayPrice) {
-      fallbackPrices[product.id] = product.displayPrice
-    }
-  })
-  
-  return fallbackPrices
 }
 

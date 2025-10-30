@@ -7,6 +7,7 @@
 import { getServerSession } from 'next-auth'
 import { createCheckoutSession, getSessionStatus, cancelSubscription, getUpcomingInvoicePreview, upgradeSubscription, scheduleDowngrade, createBillingPortalSession, getActiveSubscription } from './stripe-service'
 import { getUserByEmail, updateUserById } from '@lib/kysely/repositories/user-repo'
+import { stripe } from './stripe-client'
 
 // Type for action responses
 type ActionResponse<T = any> = {
@@ -116,12 +117,56 @@ export async function cancelSubscriptionAction(stripeCustomerId: string): Promis
 }
 
 /**
- * Map a product key to a Stripe price ID from environment
+ * Fetch the active price ID for a given Stripe product ID
+ * This allows us to store product IDs in env vars and dynamically get the default price
+ * When you have multiple price IDs (e.g., after raising prices), this returns the default active price
  */
-function mapProductToPriceId(productId: string): string | null {
-  if (productId === 'basic') return process.env.STRIPE_SUBSCRIPTION_ID_BASIC || null
-  if (productId === 'premium') return process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM || null
-  return null
+async function getPriceIdFromProductId(stripeProductId: string): Promise<string | null> {
+  try {
+    console.log('Fetching price for product:', stripeProductId)
+    
+    // Query Stripe API for all active prices associated with this product
+    const prices = await stripe.prices.list({
+      product: stripeProductId,
+      active: true,
+      limit: 1 // We only need the first active price (usually the default)
+    })
+    
+    // Return the first active price ID, or null if none found
+    if (prices.data.length > 0) {
+      const priceId = prices.data[0].id
+      console.log('Found price ID:', priceId)
+      return priceId
+    }
+    
+    console.log('No active prices found for product:', stripeProductId)
+    return null
+  } catch (error) {
+    console.error('Error fetching price for product:', stripeProductId, error)
+    return null
+  }
+}
+
+/**
+ * Map a product key to a Stripe price ID from environment
+ * Now fetches the active price from the configured product ID
+ */
+async function mapProductToPriceId(productId: string): Promise<string | null> {
+  // Get the Stripe product ID from environment
+  let stripeProductId: string | null = null
+  
+  if (productId === 'basic') {
+    stripeProductId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC || null
+  } else if (productId === 'premium') {
+    stripeProductId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM || null
+  }
+  
+  if (!stripeProductId) {
+    return null
+  }
+  
+  // Fetch the active price ID for this product
+  return await getPriceIdFromProductId(stripeProductId)
 }
 
 /**
@@ -144,7 +189,7 @@ export async function getUpgradePreviewAction(newProductId: string): Promise<Act
       return { success: false, error: 'No active subscription to preview upgrade' }
     }
 
-    const newPriceId = mapProductToPriceId(newProductId)
+    const newPriceId = await mapProductToPriceId(newProductId)
     if (!newPriceId) {
       return { success: false, error: 'Invalid product or configuration' }
     }
@@ -177,7 +222,7 @@ export async function upgradeSubscriptionAction(newProductId: string): Promise<A
       return { success: false, error: 'No active subscription to upgrade' }
     }
 
-    const newPriceId = mapProductToPriceId(newProductId)
+    const newPriceId = await mapProductToPriceId(newProductId)
     if (!newPriceId) {
       return { success: false, error: 'Invalid product or configuration' }
     }
@@ -224,7 +269,7 @@ export async function scheduleDowngradeAction(newProductId: string): Promise<Act
       return { success: false, error: 'No active subscription to schedule downgrade' }
     }
 
-    const newPriceId = mapProductToPriceId(newProductId)
+    const newPriceId = await mapProductToPriceId(newProductId)
     if (!newPriceId) {
       return { success: false, error: 'Invalid product or configuration' }
     }
@@ -270,9 +315,16 @@ export async function fetchStripePricesAction(): Promise<ActionResponse> {
     // Import stripe client dynamically to use in server action
     const { stripe } = await import('./stripe-client')
     
-    // Get price IDs from environment variables
-    const basicPriceId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC
-    const premiumPriceId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM
+    console.log('=== FETCHING STRIPE PRICES ===')
+    console.log('Basic product ID from env:', process.env.STRIPE_SUBSCRIPTION_ID_BASIC)
+    console.log('Premium product ID from env:', process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM)
+    
+    // Get product IDs from environment and fetch their active price IDs
+    const basicPriceId = await mapProductToPriceId('basic')
+    const premiumPriceId = await mapProductToPriceId('premium')
+    
+    console.log('Resolved basic price ID:', basicPriceId)
+    console.log('Resolved premium price ID:', premiumPriceId)
     
     // Initialize result object
     const priceData: {
@@ -286,6 +338,7 @@ export async function fetchStripePricesAction(): Promise<ActionResponse> {
     // Fetch basic plan price if configured
     if (basicPriceId) {
       try {
+        console.log('Retrieving basic price with ID:', basicPriceId)
         const basicPrice = await stripe.prices.retrieve(basicPriceId)
         if (basicPrice.unit_amount && basicPrice.currency && basicPrice.recurring?.interval) {
           priceData.basic = {
@@ -293,16 +346,20 @@ export async function fetchStripePricesAction(): Promise<ActionResponse> {
             currency: basicPrice.currency.toUpperCase(),
             interval: basicPrice.recurring.interval
           }
+          console.log('Successfully fetched basic price:', priceData.basic)
         }
       } catch (err) {
         console.error('Failed to fetch basic price from Stripe:', err)
         // Continue to try premium price even if basic fails
       }
+    } else {
+      console.warn('No basic price ID found - check product configuration in Stripe')
     }
     
     // Fetch premium plan price if configured
     if (premiumPriceId) {
       try {
+        console.log('Retrieving premium price with ID:', premiumPriceId)
         const premiumPrice = await stripe.prices.retrieve(premiumPriceId)
         if (premiumPrice.unit_amount && premiumPrice.currency && premiumPrice.recurring?.interval) {
           priceData.premium = {
@@ -310,11 +367,14 @@ export async function fetchStripePricesAction(): Promise<ActionResponse> {
             currency: premiumPrice.currency.toUpperCase(),
             interval: premiumPrice.recurring.interval
           }
+          console.log('Successfully fetched premium price:', priceData.premium)
         }
       } catch (err) {
         console.error('Failed to fetch premium price from Stripe:', err)
         // Price will remain null
       }
+    } else {
+      console.warn('No premium price ID found - check product configuration in Stripe')
     }
     
     return {

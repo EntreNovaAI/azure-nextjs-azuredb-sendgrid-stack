@@ -73,9 +73,12 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
 STRIPE_SECRET_KEY=sk_test_your_secret_key_here
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_signing_secret_here
 
-# Stripe Subscription Price IDs
-STRIPE_SUBSCRIPTION_ID_BASIC=price_your_basic_plan_price_id_here
-STRIPE_SUBSCRIPTION_ID_PREMIUM=price_your_premium_plan_price_id_here
+# Stripe Subscription Product IDs (NOT price IDs)
+# Use product IDs (prod_xxx) instead of price IDs (price_xxx)
+# Product IDs are stable, while price IDs can change when you update pricing
+# The system will automatically fetch the current active price for each product
+STRIPE_SUBSCRIPTION_ID_BASIC=prod_your_basic_product_id_here
+STRIPE_SUBSCRIPTION_ID_PREMIUM=prod_your_premium_product_id_here
 ```
 
 ## 5. Test Your Integration
@@ -141,8 +144,8 @@ This application supports Azure Key Vault for secure secret management. Add your
 az keyvault secret set --vault-name your-vault-name --name STRIPE_SECRET_KEY --value "sk_live_..."
 az keyvault secret set --vault-name your-vault-name --name STRIPE_WEBHOOK_SECRET --value "whsec_..."
 az keyvault secret set --vault-name your-vault-name --name NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY --value "pk_live_..."
-az keyvault secret set --vault-name your-vault-name --name STRIPE_SUBSCRIPTION_ID_BASIC --value "price_..."
-az keyvault secret set --vault-name your-vault-name --name STRIPE_SUBSCRIPTION_ID_PREMIUM --value "price_..."
+az keyvault secret set --vault-name your-vault-name --name STRIPE_SUBSCRIPTION_ID_BASIC --value "prod_..."
+az keyvault secret set --vault-name your-vault-name --name STRIPE_SUBSCRIPTION_ID_PREMIUM --value "prod_..."
 ```
 
 ## Troubleshooting

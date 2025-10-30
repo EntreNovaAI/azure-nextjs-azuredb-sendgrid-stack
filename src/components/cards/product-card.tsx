@@ -52,7 +52,12 @@ export function ProductCard({
   const isFree = finalPrice === 'Free'
   
   // Check if this is the user's current plan
-  const isCurrentPlan = !!(userAccessLevel && variant === userAccessLevel)
+  // Handle both 'free' and 'default' as equivalent for the free plan
+  const isCurrentPlan = !!(userAccessLevel && (
+    variant === userAccessLevel || 
+    (userAccessLevel === 'free' && variant === 'default') ||
+    (userAccessLevel === 'default' && variant === 'default')
+  ))
   
   // Handle purchase/plan change click
   const handlePurchase = async () => {

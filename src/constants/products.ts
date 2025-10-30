@@ -11,7 +11,8 @@ export interface Product {
   description: string
   features: string[]
   variant: 'default' | 'basic' | 'premium'
-  displayPrice?: string  // Fallback display price if Stripe fetch fails
+  // Note: No displayPrice - prices are fetched dynamically from Stripe
+  // This ensures prices are always up-to-date with your Stripe dashboard
 }
 
 // Type-safe product ID constants
@@ -34,8 +35,8 @@ export const products: Product[] = [
       'Basic features',
       'Email support'
     ],
-    variant: 'default',
-    displayPrice: 'Free'
+    variant: 'default'
+    // Free plan has no price
   },
   {
     id: PRODUCT_IDS.BASIC,
@@ -46,9 +47,8 @@ export const products: Product[] = [
       'Priority support',
       'Advanced analytics'
     ],
-    variant: 'basic',
-    // Fallback display price shown when Stripe API is unavailable
-    displayPrice: '$9.99'
+    variant: 'basic'
+    // Price is fetched dynamically from Stripe API
   },
   {
     id: PRODUCT_IDS.PREMIUM,
@@ -59,9 +59,8 @@ export const products: Product[] = [
       'Custom integrations',
       'Dedicated account manager'
     ],
-    variant: 'premium',
-    // Fallback display price shown when Stripe API is unavailable
-    displayPrice: '$29.99'
+    variant: 'premium'
+    // Price is fetched dynamically from Stripe API
   }
 ]
 

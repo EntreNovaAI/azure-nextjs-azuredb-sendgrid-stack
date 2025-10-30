@@ -80,7 +80,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
     if (user.accessLevel === 'premium') {
       const downgradeOption = window.confirm(
         '💡 Would you like to downgrade to our Basic plan instead of canceling completely?\n\n' +
-        '✓ Basic Plan ($9.99/month) keeps core features\n' +
+        '✓ Basic Plan keeps core features at a lower price\n' +
         '✗ Canceling moves you to the Free plan\n\n' +
         'Click "OK" to downgrade to Basic, or "Cancel" to proceed with full cancellation.'
       )
@@ -206,12 +206,6 @@ export function ProfileClient({ user }: ProfileClientProps) {
                     {formatAccessLevel(user.accessLevel)}
                   </span>
                 </div>
-                {user.stripeCustomerId && (
-                  <div className="flex justify-between items-center py-2 border-b">
-                    <label className="font-semibold min-w-[120px]">Customer ID:</label>
-                    <span className="font-mono text-sm bg-muted px-2 py-1 rounded">{user.stripeCustomerId}</span>
-                  </div>
-                )}
                 <div className="flex justify-between items-center py-2">
                   <label className="font-semibold min-w-[120px]">Last Updated:</label>
                   <span className="text-muted-foreground">{formatDate(user.updatedAt)}</span>
@@ -264,7 +258,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
                   <h3 className="font-semibold mb-2">Free Plan</h3>
                   <p className="text-sm text-muted-foreground">
                     You are currently on the free plan. {' '}
-                    <Link href="/dashboard" className="text-primary font-semibold hover:underline">
+                    <Link href="/landing-page" className="text-primary font-semibold hover:underline">
                       Upgrade to a paid plan
                     </Link> {' '}
                     to access premium features.

@@ -88,13 +88,14 @@ export async function updateUserAccessLevel(updateData: any): Promise<ServiceRes
     // Check if we're receiving raw Stripe session data or processed data
     if (updateData.stripeSessionData) {
       // Process Stripe session data server-side
-      const basicPriceId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC
-      const premiumPriceId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM
+      // Use product IDs (not price IDs) because prices can change over time
+      const basicProductId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC
+      const premiumProductId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM
 
       const extractedData = extractUserUpdateData(
         updateData.stripeSessionData,
-        basicPriceId,
-        premiumPriceId
+        basicProductId,
+        premiumProductId
       )
 
       accessLevel = extractedData.accessLevel

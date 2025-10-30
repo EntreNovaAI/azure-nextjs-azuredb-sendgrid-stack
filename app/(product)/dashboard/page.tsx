@@ -4,61 +4,11 @@ import { useSession } from 'next-auth/react'
 import { useEffect, useState, Suspense } from 'react'
 import { MainLayout } from '@/src/layouts'
 import { Card, CardContent } from '@components/ui'
-import { ProductCard } from '@components/cards'
-import { LoadingState, AuthRequiredState, AccessNotice } from '@components/shared'
+import { LoadingState, AuthRequiredState, AccessNotice, ProductsGrid } from '@components/shared'
 import { UserInfo } from '@components/auth'
 import { Calculator } from '@/app/(product)/dashboard/components'
 import { products } from '@constants/products'
 import { getUserAction } from '@lib/user/user-actions'
-import { useProductPrices } from '@/src/hooks/useProductPrices'
-
-/**
- * Products Grid Component
- * Handles price fetching and product display with loading state
- */
-function ProductsGridWithPrices({ filteredProducts, accessLevel }: { filteredProducts: any[], accessLevel: string }) {
-  const { prices, loading } = useProductPrices()
-  
-  // Show loading skeleton while prices are being fetched
-  if (loading) {
-    return (
-      <div className={`grid gap-8 mb-12 ${
-        filteredProducts.length === 1 
-          ? 'grid-cols-1 max-w-md mx-auto' 
-          : filteredProducts.length === 2 
-          ? 'grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto' 
-          : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-      }`}>
-        {filteredProducts.map((product) => (
-          <div 
-            key={product.id} 
-            className="h-[500px] bg-muted/30 rounded-lg animate-pulse"
-          />
-        ))}
-      </div>
-    )
-  }
-  
-  // Render product cards with fetched prices
-  return (
-    <div className={`grid gap-8 mb-12 ${
-      filteredProducts.length === 1 
-        ? 'grid-cols-1 max-w-md mx-auto' 
-        : filteredProducts.length === 2 
-        ? 'grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto' 
-        : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-    }`}>
-      {filteredProducts.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          price={prices[product.id]}
-          userAccessLevel={accessLevel}
-        />
-      ))}
-    </div>
-  )
-}
 
 /**
  * Protected Dashboard Page
@@ -199,9 +149,10 @@ export default function DashboardPage() {
               ))}
             </div>
           }>
-            <ProductsGridWithPrices 
-              filteredProducts={filteredProducts} 
-              accessLevel={accessLevel} 
+            <ProductsGrid 
+              products={filteredProducts}
+              userAccessLevel={accessLevel}
+              gridClassName="grid gap-8 mb-12"
             />
           </Suspense>
 
