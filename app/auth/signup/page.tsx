@@ -4,7 +4,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTheme } from 'next-themes'
@@ -14,7 +14,8 @@ import { PasswordInput, Card, CardContent, CardDescription, CardHeader, CardTitl
 import { registerUserAction } from '@lib/auth/auth-actions'
 import { getColors } from '@constants/colors'
 
-export default function SignUpPage() {
+// Component that uses useSearchParams - must be wrapped in Suspense
+function SignUpContent() {
   // State management for form and UI
   const [selectedMethod, setSelectedMethod] = useState<'email' | 'google' | null>(null)
   const [isLogin, setIsLogin] = useState(false) // Toggle between signup and login
@@ -338,5 +339,23 @@ export default function SignUpPage() {
         </div>
       </div>
     </AuthLayout>
+  )
+}
+
+// Main page component with Suspense boundary
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={
+      <AuthLayout showBackLink={false}>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </AuthLayout>
+    }>
+      <SignUpContent />
+    </Suspense>
   )
 }

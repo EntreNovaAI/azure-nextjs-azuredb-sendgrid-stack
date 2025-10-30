@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { MainLayout } from '@/src/layouts'
 import { Card, CardContent, Button } from '@components/ui'
@@ -64,12 +64,12 @@ async function updateUserProfile(sessionData: SessionStatus) {
 }
 
 /**
- * Checkout Return Page Component
+ * Checkout Return Page Component (Inner component)
  * Handles the return flow from Stripe checkout using query parameters
  * Follows Stripe's recommended pattern from their documentation:
  * https://docs.stripe.com/payments/accept-a-payment?platform=web&ui=embedded-form
  */
-export default function CheckoutReturn() {
+function CheckoutReturnContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const session_id = searchParams.get('session_id')
@@ -275,5 +275,22 @@ export default function CheckoutReturn() {
         </Button>
       </div>
     </MainLayout>
+  )
+}
+
+// Main page component with Suspense boundary
+export default function CheckoutReturn() {
+  return (
+    <Suspense fallback={
+      <MainLayout>
+        <div className="text-center max-w-md mx-auto py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto mb-4"></div>
+          <h1 className="text-xl font-semibold mb-2">Loading checkout status...</h1>
+          <p className="text-muted-foreground">Please wait while we verify your payment.</p>
+        </div>
+      </MainLayout>
+    }>
+      <CheckoutReturnContent />
+    </Suspense>
   )
 }

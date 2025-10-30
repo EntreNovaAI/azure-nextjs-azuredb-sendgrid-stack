@@ -6,15 +6,14 @@ export default defineConfig({
   plugins: [tsconfigPaths(), react()],
   test: {
     coverage: {
-      provider: 'v8',          // or 'istanbul'
-      reporter: ['text', 'html'], // 'text' shows in console, 'html' gives a browsable report
-      reportsDirectory: './coverage', // default
-      exclude: ['node_modules/', '.next/'], // ignore noise
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      reportsDirectory: './coverage',
+      exclude: ['node_modules/', '.next/'],
     },
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     globals: true,
-    // Increase test timeout for async operations
     testTimeout: 10000,
     // Handle unhandled promise rejections gracefully
     onConsoleLog(log: string, type: 'stdout' | 'stderr'): boolean | void {
@@ -24,15 +23,9 @@ export default defineConfig({
         return false
       }
     },
-    // Improve error reporting
-    reporters: ['verbose'],
-    // Disable threads for more stable test execution
+    // Improve error reporting - using 'default' instead of 'verbose' for v4 compatibility
+    reporters: ['default'],
+    // Use pool with proper configuration for v4
     pool: 'forks',
-    // Set resource limits
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
-    },
   },
 })

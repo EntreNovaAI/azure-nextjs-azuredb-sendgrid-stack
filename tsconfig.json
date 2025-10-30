@@ -14,7 +14,7 @@
     "incremental": true,
     "module": "esnext",
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
@@ -68,10 +68,18 @@
     ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx",
-    "vitest.config.mts",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "tests/**/*",
+    "vitest.config.mts",
+    "vitest.setup.ts",
+    "playwright.config.ts",
+    "coverage/**/*"
   ]
 }

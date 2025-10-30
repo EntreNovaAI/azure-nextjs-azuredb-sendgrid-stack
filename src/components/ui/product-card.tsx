@@ -96,10 +96,10 @@ export function ProductCard({
         />
       )}
       
-      {/* Premium badge - uses dynamic gradient */}
+      {/* Premium badge - uses dynamic gradient with responsive positioning */}
       {variant === 'premium' && (
         <div 
-          className="absolute top-4 right-4 text-white text-xs font-bold px-3 py-1 rounded-full z-10"
+          className="absolute top-2 right-2 lg:top-4 lg:right-4 text-white text-xs font-bold px-3 py-1 rounded-full z-10"
           style={{
             backgroundImage: `linear-gradient(to right, ${colors.primary}, ${colors.secondary})`
           }}
@@ -108,8 +108,8 @@ export function ProductCard({
         </div>
       )}
       
-      {/* Card header with title and description */}
-      <CardHeader className="relative z-10">
+      {/* Card header with title and description - extra top padding to avoid badge overlap on smaller screens */}
+      <CardHeader className={`relative z-10 ${variant === 'premium' ? 'pt-12 lg:pt-6' : ''}`}>
         <CardTitle className="text-2xl flex items-center gap-2">
           {variant === 'premium' && '📱'}
           {variant === 'basic' && '⭐'}

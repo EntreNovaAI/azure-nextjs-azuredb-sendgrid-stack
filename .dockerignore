@@ -20,6 +20,13 @@ coverage
 *.spec.tsx
 __tests__
 tests
+# Test configuration files - exclude from production build
+vitest.config.mts
+vitest.config.ts
+vitest.setup.ts
+playwright.config.ts
+playwright-report
+test-results
 
 # Next.js build output
 .next
@@ -54,6 +61,7 @@ dist
 README.md
 docs
 *.md
+LICENSE
 
 # Docker files (avoid recursive copying)
 # These are in the docker/ folder and shouldn't be copied into the image
@@ -61,9 +69,20 @@ docker/
 Dockerfile
 .dockerignore
 docker-compose*.yml
+DOCKER.md
+
+# Infrastructure and deployment scripts
+infrastructure/
+scripts/
+# Note: kysely/ is NOT excluded - needed for database migrations
 
 # Config files
 .editorconfig
 .prettierrc
 .eslintrc*
+tsconfig.tsbuildinfo
+components.json
+
+# Todos and project management
+todos.md
 
