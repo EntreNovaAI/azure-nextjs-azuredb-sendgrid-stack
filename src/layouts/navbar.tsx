@@ -7,13 +7,13 @@ import { useEffect, useState } from 'react'
 import { Menu } from 'lucide-react'
 import { LoginButton } from '@auth/components'
 import { 
-  ThemeToggle,
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from '@components/ui'
+import { ThemeToggle } from '@components/shared'
 import { getColors } from '@constants/colors'
 
 /**

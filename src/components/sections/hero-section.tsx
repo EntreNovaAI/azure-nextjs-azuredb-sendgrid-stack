@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Session } from 'next-auth'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
-import { Button } from './button'
+import { Button } from '@components/ui'
 import { getColors } from '@constants/colors'
 
 interface HeroSectionProps {

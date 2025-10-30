@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { validatePasswordStrength } from '@lib/auth/password-utils'
-import { PasswordInput } from '@components/ui'
+import { PasswordInput } from '@components/auth'
 import { resetPasswordAction } from '@lib/auth/auth-actions'
 
 export default function ResetPasswordPage() {

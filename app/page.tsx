@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { MainLayout } from '@/src/layouts'
-import { HeroSection, type HeroContent } from '@components/ui'
+import { HeroSection, type HeroContent } from '@components/sections'
 
 /**
  * Homepage hero content configuration

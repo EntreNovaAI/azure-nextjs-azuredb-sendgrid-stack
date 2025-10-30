@@ -1,5 +1,5 @@
 /**
- * Features Data
+ * Features Constants
  * Centralized data for application features
  * Used across different pages and components
  */
@@ -47,3 +47,4 @@ export const technicalFeatures: Feature[] = [
     description: "Industry-standard security practices with encrypted data storage and secure API endpoints."
   }
 ]
+

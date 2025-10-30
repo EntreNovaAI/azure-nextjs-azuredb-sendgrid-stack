@@ -6,7 +6,8 @@ import { signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { MainLayout } from '@/src/layouts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Separator } from '@components/ui'
-import { cancelSubscriptionAction } from '@lib/stripe/stripe-actions'
+import { cancelSubscriptionAction, createBillingPortalAction } from '@lib/stripe/stripe-actions'
+import { formatAccessLevel } from '@constants/products'
 
 // User type definition for the profile page
 interface User {
@@ -28,23 +29,34 @@ interface ProfileClientProps {
  * Profile Client Component
  * Handles user profile display and subscription management
  * Includes unsubscribe functionality for paid users
+ * Uses centralized formatAccessLevel utility from constants
  */
 export function ProfileClient({ user }: ProfileClientProps) {
   const [isUnsubscribing, setIsUnsubscribing] = useState(false)
   const [unsubscribeStatus, setUnsubscribeStatus] = useState<string | null>(null)
+  const [isPortalLoading, setIsPortalLoading] = useState(false)
   const router = useRouter()
 
-  // Format the access level for display
-  const formatAccessLevel = (level: string) => {
-    switch (level) {
-      case 'free':
-        return 'Free Plan'
-      case 'basic':
-        return 'Basic Plan'
-      case 'premium':
-        return 'Premium Plan'
-      default:
-        return 'Unknown Plan'
+  // Handle payment method update via Stripe Billing Portal
+  const handleUpdatePaymentMethod = async () => {
+    if (!user.stripeCustomerId) {
+      alert('No Stripe customer found for this account.')
+      return
+    }
+
+    try {
+      setIsPortalLoading(true)
+      const res = await createBillingPortalAction()
+      if (!res.success || !res.data?.url) {
+        alert(res.error || 'Failed to open billing portal')
+        return
+      }
+      window.open(res.data.url, '_blank', 'noopener,noreferrer')
+    } catch (err) {
+      console.error('Error opening billing portal:', err)
+      alert('An error occurred opening the billing portal.')
+    } finally {
+      setIsPortalLoading(false)
     }
   }
 
@@ -57,16 +69,39 @@ export function ProfileClient({ user }: ProfileClientProps) {
     })
   }
 
-  // Handle unsubscribe functionality
+  // Handle unsubscribe functionality with downgrade option
   const handleUnsubscribe = async () => {
     if (!user.stripeCustomerId || user.accessLevel === 'free') {
       setUnsubscribeStatus('You are currently on the free plan.')
       return
     }
 
-    // Confirm the user wants to unsubscribe
+    // Step 1: Offer downgrade option for Premium users
+    if (user.accessLevel === 'premium') {
+      const downgradeOption = window.confirm(
+        '💡 Would you like to downgrade to our Basic plan instead of canceling completely?\n\n' +
+        '✓ Basic Plan ($9.99/month) keeps core features\n' +
+        '✗ Canceling moves you to the Free plan\n\n' +
+        'Click "OK" to downgrade to Basic, or "Cancel" to proceed with full cancellation.'
+      )
+
+      if (downgradeOption) {
+        // User chose to downgrade to Basic
+        // Use window.location.href instead of router.push to preserve hash fragment
+        // Next.js router.push() strips hash anchors, preventing scroll-to-section behavior
+        setUnsubscribeStatus('Redirecting you to downgrade options...')
+        window.location.href = '/dashboard#upgrade-section'
+        return
+      }
+    }
+
+    // Step 2: Confirm cancellation
+    const planName = user.accessLevel === 'premium' ? 'Premium' : 'Basic'
     const confirmed = window.confirm(
-      'Are you sure you want to unsubscribe? This will cancel your subscription and downgrade you to the free plan.'
+      `⚠️ Are you sure you want to cancel your ${planName} subscription?\n\n` +
+      'Your subscription will remain active until the end of your current billing period.\n' +
+      'After that, you will be moved to the Free plan.\n\n' +
+      'Click "OK" to confirm cancellation.'
     )
 
     if (!confirmed) {
@@ -81,17 +116,22 @@ export function ProfileClient({ user }: ProfileClientProps) {
       const result = await cancelSubscriptionAction(user.stripeCustomerId)
 
       if (result.success) {
-        setUnsubscribeStatus(result.data?.message || 'Successfully unsubscribed! Your subscription will end at the end of the current billing period.')
+        const endDate = result.data?.note || 'the end of your current billing period'
+        setUnsubscribeStatus(
+          `✓ Subscription canceled successfully!\n\n` +
+          `Your ${planName} plan will remain active until ${endDate}. ` +
+          `After that, you'll be moved to the Free plan. You can resubscribe anytime from the dashboard.`
+        )
         // Refresh the page to show updated user data
         setTimeout(() => {
-          router.refresh()
-        }, 2000)
+          window.location.reload()
+        }, 3000)
       } else {
-        setUnsubscribeStatus(result.error || 'Failed to unsubscribe. Please try again.')
+        setUnsubscribeStatus('✗ ' + (result.error || 'Failed to cancel subscription. Please try again.'))
       }
     } catch (error) {
       console.error('Error unsubscribing:', error)
-      setUnsubscribeStatus('An error occurred while unsubscribing. Please try again.')
+      setUnsubscribeStatus('✗ An error occurred while canceling your subscription. Please try again.')
     } finally {
       setIsUnsubscribing(false)
     }
@@ -178,25 +218,40 @@ export function ProfileClient({ user }: ProfileClientProps) {
                 </div>
               </div>
 
-              {/* Unsubscribe Section */}
+              {/* Manage Subscription Section */}
               {user.accessLevel !== 'free' && user.stripeCustomerId && (
                 <div className="pt-6 border-t">
                   <h3 className="font-semibold mb-2">Manage Subscription</h3>
                   <p className="text-sm text-muted-foreground mb-4">
                     You are currently subscribed to the {formatAccessLevel(user.accessLevel)}. 
-                    If you wish to cancel your subscription, click the button below.
+                    You can update your payment method or cancel your subscription below.
+                    {user.accessLevel === 'premium' && ' We also offer a more affordable Basic plan option.'}
                   </p>
                   
-                  <Button 
-                    onClick={handleUnsubscribe}
-                    disabled={isUnsubscribing}
-                    variant="destructive"
-                  >
-                    {isUnsubscribing ? 'Processing...' : 'Unsubscribe'}
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button 
+                      onClick={handleUpdatePaymentMethod}
+                      disabled={isPortalLoading}
+                      variant="outline"
+                    >
+                      {isPortalLoading ? 'Opening Portal...' : 'Update Payment Method'}
+                    </Button>
+
+                    <Button 
+                      onClick={handleUnsubscribe}
+                      disabled={isUnsubscribing}
+                      variant="destructive"
+                    >
+                      {isUnsubscribing ? 'Processing...' : 'Cancel Subscription'}
+                    </Button>
+                  </div>
                   
                   {unsubscribeStatus && (
-                    <div className={`mt-4 p-4 rounded font-medium text-sm ${unsubscribeStatus.includes('Successfully') ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20' : 'bg-destructive/10 text-destructive border border-destructive/20'}`}>
+                    <div className={`mt-4 p-4 rounded text-sm whitespace-pre-line ${
+                      unsubscribeStatus.includes('✓') || unsubscribeStatus.includes('Redirect') 
+                        ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20' 
+                        : 'bg-destructive/10 text-destructive border border-destructive/20'
+                    }`}>
                       {unsubscribeStatus}
                     </div>
                   )}

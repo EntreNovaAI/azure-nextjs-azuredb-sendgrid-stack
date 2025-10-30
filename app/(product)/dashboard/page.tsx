@@ -1,17 +1,70 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { MainLayout } from '@/src/layouts'
-import { ProductCard, LoadingState, AuthRequiredState, AccessNotice, UserInfo, Card, CardContent } from '@components/ui'
+import { Card, CardContent } from '@components/ui'
+import { ProductCard } from '@components/cards'
+import { LoadingState, AuthRequiredState, AccessNotice } from '@components/shared'
+import { UserInfo } from '@components/auth'
 import { Calculator } from '@/app/(product)/dashboard/components'
-import { products } from '@/app/(product)/dashboard/_data/products'
+import { products } from '@constants/products'
 import { getUserAction } from '@lib/user/user-actions'
+import { useProductPrices } from '@/src/hooks/useProductPrices'
+
+/**
+ * Products Grid Component
+ * Handles price fetching and product display with loading state
+ */
+function ProductsGridWithPrices({ filteredProducts, accessLevel }: { filteredProducts: any[], accessLevel: string }) {
+  const { prices, loading } = useProductPrices()
+  
+  // Show loading skeleton while prices are being fetched
+  if (loading) {
+    return (
+      <div className={`grid gap-8 mb-12 ${
+        filteredProducts.length === 1 
+          ? 'grid-cols-1 max-w-md mx-auto' 
+          : filteredProducts.length === 2 
+          ? 'grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto' 
+          : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+      }`}>
+        {filteredProducts.map((product) => (
+          <div 
+            key={product.id} 
+            className="h-[500px] bg-muted/30 rounded-lg animate-pulse"
+          />
+        ))}
+      </div>
+    )
+  }
+  
+  // Render product cards with fetched prices
+  return (
+    <div className={`grid gap-8 mb-12 ${
+      filteredProducts.length === 1 
+        ? 'grid-cols-1 max-w-md mx-auto' 
+        : filteredProducts.length === 2 
+        ? 'grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto' 
+        : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+    }`}>
+      {filteredProducts.map((product) => (
+        <ProductCard
+          key={product.id}
+          product={product}
+          price={prices[product.id]}
+          userAccessLevel={accessLevel}
+        />
+      ))}
+    </div>
+  )
+}
 
 /**
  * Protected Dashboard Page
  * Only accessible to authenticated users
  * Displays premium content and user access level
+ * Dynamically fetches prices from Stripe for real-time accuracy
  */
 export default function DashboardPage() {
   const { data: session, status } = useSession()
@@ -59,6 +112,19 @@ export default function DashboardPage() {
   // Get access level for display
   const accessLevel = user?.accessLevel || 'free'
   const accessLevelDisplay = accessLevel.charAt(0).toUpperCase() + accessLevel.slice(1)
+  
+  // Filter products based on user's current access level
+  // FREE users see all plans, BASIC users see BASIC and PREMIUM, PREMIUM users see only PREMIUM
+  const filteredProducts = products.filter((product) => {
+    if (accessLevel === 'free' || accessLevel === 'default') {
+      return true // Show all products for free users
+    } else if (accessLevel === 'basic') {
+      return product.variant !== 'default' // Hide free plan for basic users
+    } else if (accessLevel === 'premium') {
+      return product.variant === 'premium' // Show only premium plan for premium users
+    }
+    return true
+  })
 
   return (
     <MainLayout>
@@ -115,20 +181,29 @@ export default function DashboardPage() {
             <UserInfo user={user} />
           </div>
 
-          {/* Product Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                title={product.title}
-                description={product.description}
-                features={product.features}
-                price={product.price}
-                variant={product.variant}
-                productId={product.id}
-              />
-            ))}
-          </div>
+          {/* Product Grid - filtered based on user's access level */}
+          {/* Center cards when there are fewer than 3 */}
+          <Suspense fallback={
+            <div className={`grid gap-8 mb-12 ${
+              filteredProducts.length === 1 
+                ? 'grid-cols-1 max-w-md mx-auto' 
+                : filteredProducts.length === 2 
+                ? 'grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto' 
+                : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+            }`}>
+              {filteredProducts.map((product) => (
+                <div 
+                  key={product.id} 
+                  className="h-[500px] bg-muted/30 rounded-lg animate-pulse"
+                />
+              ))}
+            </div>
+          }>
+            <ProductsGridWithPrices 
+              filteredProducts={filteredProducts} 
+              accessLevel={accessLevel} 
+            />
+          </Suspense>
 
           {/* Access Level Notice */}
           <AccessNotice accessLevel={accessLevel} />

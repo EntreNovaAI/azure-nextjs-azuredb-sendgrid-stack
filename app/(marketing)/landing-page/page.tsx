@@ -2,17 +2,56 @@
 
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { MainLayout } from '@/src/layouts'
-import { Button, Card, CardContent, Separator, ProductCard, FeaturesSection } from '@components/ui'
+import { Button, Card, CardContent, Separator } from '@components/ui'
+import { ProductCard, FeaturesSection } from '@components/cards'
 import { getColors } from '@constants/colors'
-import { products } from '@/app/(product)/dashboard/_data/products'
-import { heroFeatures } from '@src/data/features'
+import { products } from '@constants/products'
+import { heroFeatures } from '@constants/features'
+import { useProductPrices } from '@/src/hooks/useProductPrices'
+
+/**
+ * Products Grid Component
+ * Separate component to handle price fetching with loading state
+ */
+function ProductsGrid() {
+  const { prices, loading } = useProductPrices()
+  
+  // Show loading skeleton while prices are being fetched
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {products.map((product) => (
+          <div 
+            key={product.id} 
+            className="h-[500px] bg-muted/30 rounded-lg animate-pulse"
+          />
+        ))}
+      </div>
+    )
+  }
+  
+  // Render product cards with fetched prices
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {products.map((product) => (
+        <ProductCard
+          key={product.id}
+          product={product}
+          price={prices[product.id]}
+        />
+      ))}
+    </div>
+  )
+}
 
 /**
  * Landing Page
  * Full marketing page with tweet-sized selling points, product plans, and features
  * Shows available subscription tiers and platform capabilities
  * Uses MainLayout for consistent structure
+ * Dynamically fetches prices from Stripe for real-time accuracy
  */
 export default function LandingPage() {
   const { resolvedTheme } = useTheme()
@@ -90,20 +129,19 @@ export default function LandingPage() {
               Select the perfect plan for your needs. All plans include secure payment processing and instant access.
             </p>
             
-            {/* Product cards grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {products.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  title={product.title}
-                  description={product.description}
-                  features={product.features}
-                  price={product.price}
-                  variant={product.variant}
-                  productId={product.id}
-                />
-              ))}
-            </div>
+            {/* Product cards grid with Suspense boundary for price loading */}
+            <Suspense fallback={
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {products.map((product) => (
+                  <div 
+                    key={product.id} 
+                    className="h-[500px] bg-muted/30 rounded-lg animate-pulse"
+                  />
+                ))}
+              </div>
+            }>
+              <ProductsGrid />
+            </Suspense>
           </div>
         </div>
 

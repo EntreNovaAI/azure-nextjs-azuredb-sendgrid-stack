@@ -126,6 +126,268 @@ export async function createCheckoutSession(
 }
 
 /**
+ * Get a user's active subscription by Stripe customer ID
+ * Returns the first active/trialing subscription if present
+ */
+export async function getActiveSubscription(stripeCustomerId: string): Promise<ServiceResponse<Stripe.Subscription | null>> {
+  try {
+    if (!stripeCustomerId || !stripeCustomerId.startsWith('cus_')) {
+      return { success: false, error: 'Invalid Stripe customer ID' }
+    }
+
+    const subs = await stripe.subscriptions.list({
+      customer: stripeCustomerId,
+      status: 'all',
+      expand: ['data.items']
+    })
+
+    const activeSub = subs.data.find(s => s.status === 'active' || s.status === 'trialing') || null
+
+    return { success: true, data: activeSub }
+  } catch (error) {
+    console.error('Error fetching active subscription:', error)
+    return { success: false, error: 'Failed to fetch active subscription' }
+  }
+}
+
+/**
+ * Upgrade subscription immediately with proration
+ * - Uses proration_behavior: 'create_prorations'
+ * - Uses payment_behavior: 'default_incomplete' to support SCA when needed
+ * - Returns client_secret when payment confirmation is required
+ */
+export async function upgradeSubscription(subscriptionId: string, newPriceId: string): Promise<ServiceResponse<{ clientSecret?: string; invoiceId?: string }>> {
+  try {
+    if (!subscriptionId?.startsWith('sub_') || !newPriceId) {
+      return { success: false, error: 'Invalid parameters' }
+    }
+
+    // Retrieve subscription to get current item id
+    const current = await stripe.subscriptions.retrieve(subscriptionId, { expand: ['items'] })
+    const currentItem = current.items.data[0]
+    if (!currentItem) {
+      return { success: false, error: 'No subscription items to update' }
+    }
+
+    const updated = await stripe.subscriptions.update(subscriptionId, {
+      items: [
+        {
+          id: currentItem.id,
+          price: newPriceId,
+          quantity: currentItem.quantity ?? 1,
+        }
+      ],
+      proration_behavior: 'create_prorations',
+      payment_behavior: 'default_incomplete',
+      expand: ['latest_invoice.payment_intent']
+    })
+
+    const invoice = updated.latest_invoice as Stripe.Invoice | null
+    const paymentIntent = ((updated.latest_invoice as any)?.payment_intent as Stripe.PaymentIntent | null) || null
+
+    return {
+      success: true,
+      data: {
+        clientSecret: paymentIntent?.client_secret || undefined,
+        invoiceId: invoice?.id
+      }
+    }
+  } catch (error) {
+    console.error('Error upgrading subscription:', error)
+    return { success: false, error: 'Failed to upgrade subscription' }
+  }
+}
+
+/**
+ * Schedule a downgrade at period end using Subscription Schedules
+ * - Creates a schedule from the current subscription
+ * - Phase 1: keep current plan until current_period_end
+ * - Phase 2: switch to lower plan starting at current_period_end
+ */
+export async function scheduleDowngrade(subscriptionId: string, newPriceId: string): Promise<ServiceResponse<{ scheduleId: string; effectiveAt: number }>> {
+  try {
+    if (!subscriptionId?.startsWith('sub_') || !newPriceId) {
+      return { success: false, error: 'Invalid parameters' }
+    }
+
+    const current = await stripe.subscriptions.retrieve(subscriptionId, { expand: ['items'] })
+    const currentItem = current.items.data[0]
+    if (!currentItem || !(current as any).current_period_end) {
+      return { success: false, error: 'Subscription missing required data' }
+    }
+
+    const effectiveAt = (current as any).current_period_end
+
+    // Create a schedule with two phases
+    const schedule = await (stripe.subscriptionSchedules as any).create({
+      from_subscription: subscriptionId,
+      end_behavior: 'release',
+      phases: [
+        {
+          items: [
+            {
+              price: currentItem.price.id,
+              quantity: currentItem.quantity ?? 1,
+            }
+          ],
+          start_date: 'now',
+          end_date: effectiveAt,
+          proration_behavior: 'none'
+        },
+        {
+          items: [
+            {
+              price: newPriceId,
+              quantity: currentItem.quantity ?? 1,
+            }
+          ],
+          start_date: effectiveAt,
+        }
+      ]
+    })
+
+    return { success: true, data: { scheduleId: schedule.id, effectiveAt } }
+  } catch (error) {
+    console.error('Error scheduling downgrade:', error)
+    return { success: false, error: 'Failed to schedule downgrade' }
+  }
+}
+
+/**
+ * Create a Stripe Billing Portal session for payment method updates
+ */
+export async function createBillingPortalSession(stripeCustomerId: string): Promise<ServiceResponse<{ url: string }>> {
+  try {
+    if (!stripeCustomerId?.startsWith('cus_')) {
+      return { success: false, error: 'Invalid Stripe customer ID' }
+    }
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: stripeCustomerId,
+      return_url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/profile`
+    })
+
+    return { success: true, data: { url: session.url } }
+  } catch (error) {
+    console.error('Error creating billing portal session:', error)
+    return { success: false, error: 'Failed to create billing portal session' }
+  }
+}
+
+/**
+ * Get a proration preview using Upcoming Invoice API
+ * Simulates switching to a new price and returns totals for preview
+ */
+export async function getUpcomingInvoicePreview(subscriptionId: string, newPriceId: string): Promise<ServiceResponse<{ amountDue: number; total: number; currency: string; lines: Stripe.InvoiceLineItem[]; prorationAmountNow: number }>> {
+  try {
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId, { expand: ['items', 'customer'] })
+    const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id
+    if (!customerId) {
+      return { success: false, error: 'Missing customer for subscription' }
+    }
+
+    const prorationDate = Math.floor(Date.now() / 1000)
+    const currentItem = subscription.items.data[0]
+    if (!currentItem) {
+      return { success: false, error: 'No subscription items found' }
+    }
+
+    console.log('=== UPGRADE PREVIEW DEBUG ===')
+    console.log('Subscription ID:', subscriptionId)
+    console.log('Current price:', currentItem.price.id)
+    console.log('New price:', newPriceId)
+    console.log('Proration date:', prorationDate)
+    console.log('Current period end:', (subscription as any).current_period_end)
+
+    // Use the correct Stripe Invoice Preview API
+    // According to Stripe SDK source, use createPreview but with correct structure
+    // subscription_details contains the items to modify
+    const upcomingInvoice = await stripe.invoices.createPreview({
+      schedule: undefined,
+      subscription: subscriptionId,
+      subscription_details: {
+        items: [
+          {
+            id: currentItem.id,
+            price: newPriceId,
+          }
+        ],
+        proration_date: prorationDate,
+        proration_behavior: 'create_prorations',
+      },
+    })
+
+    const lines: Stripe.InvoiceLineItem[] = upcomingInvoice.lines?.data || []
+    
+    // Log detailed line item information for debugging
+    console.log('=== UPCOMING INVOICE LINES ===')
+    console.log('Total lines:', lines.length)
+    lines.forEach((line: any, index: number) => {
+      console.log(`Line ${index + 1}:`, {
+        description: line.description,
+        amount: line.amount,
+        proration: line.proration,
+        type: line.type,
+        period: line.period ? `${new Date(line.period.start * 1000).toLocaleDateString()} - ${new Date(line.period.end * 1000).toLocaleDateString()}` : 'N/A',
+        price: line.price?.id
+      })
+    })
+    console.log('Invoice amount_due:', upcomingInvoice.amount_due)
+    console.log('Invoice amount_remaining:', upcomingInvoice.amount_remaining)
+    console.log('Invoice subtotal:', upcomingInvoice.subtotal)
+    console.log('Invoice total:', upcomingInvoice.total)
+    console.log('=== END PREVIEW DEBUG ===')
+
+    // Calculate the immediate proration charge
+    // This is the amount that will be charged RIGHT NOW when upgrading
+    // We need to filter for lines in the CURRENT billing period only
+    // Lines in future periods should not be included in immediate charge
+    let immediateCharge = 0
+    const currentPeriodEnd = (subscription as any).current_period_end
+    
+    lines.forEach((line: any) => {
+      // Check if this line is for the current period (not future billing)
+      // Proration lines will have a period.end that matches current_period_end
+      const lineEndDate = line.period?.end
+      
+      // Include lines that:
+      // 1. Are in the current billing period (period.end <= current_period_end + small buffer)
+      // 2. OR have descriptions indicating proration ("Unused time", "Remaining time")
+      const isCurrentPeriod = lineEndDate && lineEndDate <= (currentPeriodEnd + 86400) // 1 day buffer
+      const isProrationDescription = line.description?.includes('Unused time') || line.description?.includes('Remaining time')
+      
+      if (isCurrentPeriod || isProrationDescription) {
+        const amount = line.amount ?? 0
+        console.log(`✓ Including in immediate charge - ${line.description}: ${amount} cents`)
+        immediateCharge += amount
+      } else {
+        console.log(`✗ Excluding (future period) - ${line.description}: ${line.amount ?? 0} cents`)
+      }
+    })
+
+    console.log('Calculated immediate proration charge:', immediateCharge, 'cents')
+    console.log('That is:', (immediateCharge / 100).toFixed(2), upcomingInvoice.currency?.toUpperCase() || 'USD')
+
+    // Use the calculated immediate charge
+    const prorationAmountNow = immediateCharge
+
+    return {
+      success: true,
+      data: {
+        amountDue: upcomingInvoice.amount_due ?? 0,
+        total: upcomingInvoice.total ?? 0,
+        currency: upcomingInvoice.currency ?? 'usd',
+        lines,
+        prorationAmountNow,
+      }
+    }
+  } catch (error) {
+    console.error('Error retrieving upcoming invoice preview:', error)
+    return { success: false, error: 'Failed to retrieve upgrade preview' }
+  }
+}
+
+/**
  * Get Stripe session status
  * Retrieves comprehensive session information for payment confirmation
  */
@@ -433,6 +695,55 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
         } else {
           console.log('Skipping inactive subscription update:', subscription.status)
         }
+        break
+      }
+
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice
+        console.log('Invoice payment succeeded:', invoice.id)
+
+        // If this is a subscription invoice, ensure access is granted immediately (especially after upgrade)
+        const invAny = invoice as any
+        if (invAny.subscription && invAny.customer) {
+          const subscription = await stripe.subscriptions.retrieve(invAny.subscription as string, { expand: ['items'] })
+
+          const basicPriceId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC
+          const premiumPriceId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM
+
+          let accessLevel = 'free'
+          for (const item of subscription.items.data) {
+            const priceId = item.price.id
+            if (priceId === premiumPriceId) {
+              accessLevel = 'premium'
+              break
+            } else if (priceId === basicPriceId) {
+              accessLevel = 'basic'
+            }
+          }
+
+          const user = await findUserByStripeId(invAny.customer as string)
+          if (user) {
+            await updateUserAccessLevel(user.id, accessLevel)
+            console.log('User access updated on payment success:', user.email, accessLevel)
+          }
+        }
+        break
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice
+        console.log('Invoice payment failed:', invoice.id)
+        // Keep prior access; optionally notify user via email in future
+        break
+      }
+
+      case 'subscription_schedule.created':
+      case 'subscription_schedule.updated':
+      case 'subscription_schedule.canceled':
+      case 'subscription_schedule.released': {
+        const schedule = event.data.object as Stripe.SubscriptionSchedule
+        console.log('Subscription schedule event:', event.type, schedule.id)
+        // Access level will flip on the subsequent customer.subscription.updated when phase changes
         break
       }
 

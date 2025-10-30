@@ -3,7 +3,7 @@
 import { ReactNode } from 'react'
 import Link from 'next/link'
 import { useTheme } from 'next-themes'
-import { ThemeToggle } from '@components/ui/theme-toggle'
+import { ThemeToggle } from '@components/shared'
 import { getColors } from '@constants/colors'
 
 interface AuthLayoutProps {
