@@ -20,6 +20,7 @@ Wait for the user to choose an option before proceeding.
 Use this when the user already knows what they want to build.
 
 **Required Information:**
+
 - Page route/URL (e.g., `/launch`, `/promo-2025`, `/black-friday`)
 - Product/offer name
 - Headline
@@ -29,6 +30,7 @@ Use this when the user already knows what they want to build.
 - Optional: testimonials, logos, stats for social proof
 
 **Process:**
+
 1. Create a new folder under `app/(marketing)/[page-name]/`
 2. Create a `page.tsx` file with the marketing content
 3. Use modern, responsive design with Tailwind CSS
