@@ -43,7 +43,7 @@ interface SessionStatus {
  * Now passes raw Stripe session data to server for processing
  */
 async function updateUserProfile(sessionData: SessionStatus) {
-  console.log('Updating user profile with Stripe session data:', sessionData)
+  // Session data logging removed to prevent sensitive customer data exposure
   
   try {
     // Use Server Action instead of axios
@@ -52,7 +52,7 @@ async function updateUserProfile(sessionData: SessionStatus) {
     })
     
     if (result.success) {
-      console.log('User profile updated successfully:', result.data)
+      // Result data logging removed to prevent sensitive user data exposure
       return result.data
     } else {
       throw new Error(`Failed to update user profile: ${result.error}`)
@@ -99,28 +99,12 @@ function CheckoutReturnContent() {
         
         const data = result.data
         
-        // Comprehensive logging for database update planning
-        console.log('=== STRIPE SESSION STATUS DATA ===')
-        console.log('Full session data:', data)
-        console.log('Session ID:', session_id)
-        console.log('Session Status:', data.status)
-        console.log('Payment Status:', data.payment_status)
-        console.log('Customer Email:', data.customer_email)
-        console.log('All available properties:', Object.keys(data))
-        console.log('Raw data structure:', JSON.stringify(data, null, 2))
-        console.log('=== END SESSION DATA ===')
+        // Session data logging removed to prevent sensitive customer data exposure
+        // Customer IDs, emails, subscription IDs, and session data are sensitive
         
         // Check if payment is complete and update database
         if (data.status === 'complete' && data.payment_status === 'paid') {
-          console.log('Payment completed! Updating user profile...')
-          console.log('Available data for DB update:')
-          console.log('- Customer Email:', data.customer_email)
-          console.log('- Customer Name:', data.customer_name)
-          console.log('- Subscription ID:', data.subscription_id)
-          console.log('- Customer ID:', data.customer_id)
-          console.log('- Amount:', data.amount_total)
-          console.log('- Currency:', data.currency)
-          console.log('- Line Items:', data.line_items)
+          // Payment completion logging removed to prevent sensitive data exposure
           
           // Update user profile with new access level and Stripe customer ID
           try {

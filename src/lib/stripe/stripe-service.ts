@@ -59,7 +59,7 @@ function checkRateLimit(userId: string): boolean {
  */
 async function getPriceIdFromProductId(stripeProductId: string): Promise<string | null> {
   try {
-    console.log('Fetching price for product:', stripeProductId)
+    // Product ID logging removed to prevent sensitive identifier exposure
     
     // Query Stripe API for all active prices associated with this product
     const prices = await stripe.prices.list({
@@ -71,14 +71,15 @@ async function getPriceIdFromProductId(stripeProductId: string): Promise<string 
     // Return the first active price ID, or null if none found
     if (prices.data.length > 0) {
       const priceId = prices.data[0].id
-      console.log('Found price ID:', priceId)
+      // Price ID logging removed to prevent sensitive identifier exposure
       return priceId
     }
     
-    console.log('No active prices found for product:', stripeProductId)
+    // Product ID logging removed to prevent sensitive identifier exposure
     return null
   } catch (error) {
-    console.error('Error fetching price for product:', stripeProductId, error)
+    // Product ID logging removed from error handler to prevent sensitive identifier exposure
+    console.error('Error fetching price for product:', error)
     return null
   }
 }
@@ -114,18 +115,16 @@ export async function createCheckoutSession(
   userEmail: string
 ): Promise<ServiceResponse> {
   try {
-    console.log('Creating checkout session for user:', userEmail)
+    // User email logging removed to prevent PII exposure
 
     // Rate limiting check
     if (!checkRateLimit(userEmail)) {
-      console.log('Rate limit exceeded for user:', userEmail)
+      // User email logging removed to prevent PII exposure
       return {
         success: false,
         error: 'Too many requests. Please try again later.'
       }
     }
-
-    console.log('Rate limit check passed')
 
     // Get the Stripe product ID from environment variables
     // We now store product IDs (prod_xxx) instead of price IDs
@@ -136,7 +135,7 @@ export async function createCheckoutSession(
     } else if (productId === 'premium') {
       stripeProductId = process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM || null
     } else {
-      console.log('Invalid product ID:', productId)
+      // Product ID logging removed to prevent sensitive identifier exposure
     }
 
     // Validate that we have a valid product ID
@@ -159,7 +158,7 @@ export async function createCheckoutSession(
     }
 
     // Create Stripe checkout session following their documentation pattern
-    console.log('Creating Stripe session with price ID:', priceId)
+    // Price ID logging removed to prevent sensitive identifier exposure
 
     const checkoutSession = await stripe.checkout.sessions.create({
       line_items: [
@@ -357,12 +356,8 @@ export async function getUpcomingInvoicePreview(subscriptionId: string, newPrice
       return { success: false, error: 'No subscription items found' }
     }
 
-    console.log('=== UPGRADE PREVIEW DEBUG ===')
-    console.log('Subscription ID:', subscriptionId)
-    console.log('Current price:', currentItem.price.id)
-    console.log('New price:', newPriceId)
-    console.log('Proration date:', prorationDate)
-    console.log('Current period end:', (subscription as any).current_period_end)
+    // Debug logging removed to prevent sensitive data exposure
+    // Subscription IDs and price IDs are sensitive identifiers
 
     // Use the correct Stripe Invoice Preview API
     // According to Stripe SDK source, use createPreview but with correct structure
@@ -384,24 +379,8 @@ export async function getUpcomingInvoicePreview(subscriptionId: string, newPrice
 
     const lines: Stripe.InvoiceLineItem[] = upcomingInvoice.lines?.data || []
     
-    // Log detailed line item information for debugging
-    console.log('=== UPCOMING INVOICE LINES ===')
-    console.log('Total lines:', lines.length)
-    lines.forEach((line: any, index: number) => {
-      console.log(`Line ${index + 1}:`, {
-        description: line.description,
-        amount: line.amount,
-        proration: line.proration,
-        type: line.type,
-        period: line.period ? `${new Date(line.period.start * 1000).toLocaleDateString()} - ${new Date(line.period.end * 1000).toLocaleDateString()}` : 'N/A',
-        price: line.price?.id
-      })
-    })
-    console.log('Invoice amount_due:', upcomingInvoice.amount_due)
-    console.log('Invoice amount_remaining:', upcomingInvoice.amount_remaining)
-    console.log('Invoice subtotal:', upcomingInvoice.subtotal)
-    console.log('Invoice total:', upcomingInvoice.total)
-    console.log('=== END PREVIEW DEBUG ===')
+    // Detailed line item logging removed to prevent sensitive data exposure
+    // Price IDs and invoice details are sensitive identifiers
 
     // Calculate the immediate proration charge
     // This is the amount that will be charged RIGHT NOW when upgrading
@@ -423,15 +402,12 @@ export async function getUpcomingInvoicePreview(subscriptionId: string, newPrice
       
       if (isCurrentPeriod || isProrationDescription) {
         const amount = line.amount ?? 0
-        console.log(`✓ Including in immediate charge - ${line.description}: ${amount} cents`)
+        // Logging removed to prevent sensitive data exposure
         immediateCharge += amount
-      } else {
-        console.log(`✗ Excluding (future period) - ${line.description}: ${line.amount ?? 0} cents`)
       }
     })
 
-    console.log('Calculated immediate proration charge:', immediateCharge, 'cents')
-    console.log('That is:', (immediateCharge / 100).toFixed(2), upcomingInvoice.currency?.toUpperCase() || 'USD')
+    // Logging removed to prevent sensitive financial data exposure
 
     // Use the calculated immediate charge
     const prorationAmountNow = immediateCharge
@@ -471,23 +447,16 @@ export async function getSessionStatus(sessionId: string): Promise<ServiceRespon
       expand: ['line_items', 'subscription', 'customer']
     })
 
-    // Log comprehensive session data for debugging
-    console.log('=== STRIPE SESSION RETRIEVAL ===')
-    console.log('Session ID:', sessionId)
-    console.log('Session status:', session.status)
-    console.log('Payment status:', session.payment_status)
-    console.log('Customer ID:', session.customer)
-    console.log('=== END STRIPE SESSION ===')
+    // Session data logging removed to prevent sensitive identifier exposure
+    // Session IDs and customer IDs are sensitive and should not be logged
 
     // Sanitize customer name to prevent credit card numbers from being exposed
     const rawCustomerName = session.customer_details?.name || null
     const sanitizedCustomerName = sanitizeCustomerName(rawCustomerName)
     
     if (rawCustomerName && !sanitizedCustomerName) {
-      console.warn('Filtered out invalid customer name from session status:', {
-        sessionId,
-        reason: 'Name failed validation (likely credit card number or invalid format)'
-      })
+      // Session ID logging removed to prevent sensitive identifier exposure
+      console.warn('Filtered out invalid customer name from session status - name failed validation (likely credit card number or invalid format)')
     }
 
     // Prepare the response data
@@ -570,8 +539,7 @@ export async function cancelSubscription(
       }
     }
 
-    console.log('Starting unsubscribe process for user:', userEmail)
-    console.log('Stripe customer ID:', stripeCustomerId)
+    // User email and customer ID logging removed to prevent PII exposure
 
     // Get all active subscriptions for this customer
     const subscriptions = await stripe.subscriptions.list({
@@ -579,7 +547,7 @@ export async function cancelSubscription(
       status: 'active'
     })
 
-    console.log('Found active subscriptions:', subscriptions.data.length)
+    // Subscription count logging is safe (non-sensitive)
 
     // Cancel all active subscriptions
     const cancelledSubscriptions = []
@@ -592,16 +560,17 @@ export async function cancelSubscription(
         })
 
         cancelledSubscriptions.push(cancelled.id)
-        console.log('Subscription marked for cancellation:', cancelled.id)
+        // Subscription ID logging removed to prevent sensitive identifier exposure
       } catch (error) {
-        console.error('Error cancelling subscription:', subscription.id, error)
+        // Subscription ID logging removed from error handler to prevent sensitive identifier exposure
+        console.error('Error cancelling subscription:', error)
         // Continue with other subscriptions even if one fails
       }
     }
 
     // If no subscriptions were found or cancelled, still update user to free
     if (cancelledSubscriptions.length === 0) {
-      console.log('No active subscriptions found, updating user to free plan')
+      // Logging removed - non-critical operation
     }
 
     // Update user's access level to free in database
@@ -609,7 +578,7 @@ export async function cancelSubscription(
     // But we update it here for immediate UI feedback
     const updatedUser = await updateUserById(user.id, { accessLevel: 'free' })
 
-    console.log('User updated to free plan:', updatedUser.email)
+    // User email logging removed to prevent PII exposure
 
     // Return success response
     return {
@@ -648,7 +617,7 @@ async function findUserByStripeId(stripeCustomerId: string, email?: string | nul
   let user = await findUserByStripeCustomerId(stripeCustomerId)
 
   if (user) {
-    console.log('User found by Stripe ID:', stripeCustomerId)
+    // Customer ID logging removed to prevent sensitive identifier exposure
     return user
   }
 
@@ -659,12 +628,12 @@ async function findUserByStripeId(stripeCustomerId: string, email?: string | nul
     if (userByEmail) {
       // Link Stripe ID to existing user
       await linkStripeIdToUserId(userByEmail.id, stripeCustomerId)
-      console.log('User found by email and linked Stripe ID:', email)
+      // Email and customer ID logging removed to prevent PII exposure
       return await findUserByStripeCustomerId(stripeCustomerId)
     }
   }
 
-  console.log('No user found with Stripe ID or email:', { stripeCustomerId, email })
+  // Customer ID and email logging removed to prevent PII exposure
   return null
 }
 
@@ -673,7 +642,7 @@ async function findUserByStripeId(stripeCustomerId: string, email?: string | nul
  */
 async function updateUserAccessLevel(userId: string, accessLevel: string) {
   await setAccessLevelById(userId, accessLevel)
-  console.log(`User access level updated to: ${accessLevel}`)
+  // User ID logging removed to prevent sensitive identifier exposure
 }
 
 /**
@@ -682,16 +651,14 @@ async function updateUserAccessLevel(userId: string, accessLevel: string) {
  * This contains all the business logic from the webhook route
  */
 export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<void> {
-  console.log('Processing Stripe webhook:', event.type)
+  // Webhook event type logging is safe (non-sensitive)
 
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
 
-        console.log('Checkout session completed:', session.id)
-        console.log('Customer ID:', session.customer)
-        console.log('Customer email:', session.customer_details?.email)
+        // Session ID, customer ID, and email logging removed to prevent sensitive data exposure
 
         // Get full session data with line items to determine access level
         const fullSession = await stripe.checkout.sessions.retrieve(session.id, {
@@ -716,17 +683,17 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
 
         // Update user in database if we have a valid Stripe customer ID
         if (updateData.stripeCustomerId) {
-          console.log('Processing checkout completion:', updateData)
+          // Update data logging removed to prevent sensitive customer data exposure
 
           const user = await findUserByStripeId(updateData.stripeCustomerId, updateData.customerEmail)
 
           if (user) {
             await updateUserAccessLevel(user.id, updateData.accessLevel)
           } else {
-            console.log('Unable to find or create user for checkout completion')
+            // Logging removed - error handling without exposing sensitive data
           }
         } else {
-          console.log('Missing Stripe customer ID for user update:', updateData)
+          // Update data logging removed to prevent sensitive customer data exposure
         }
         break
       }
@@ -734,11 +701,11 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription
 
-        console.log('Subscription updated:', subscription.id, 'Status:', subscription.status)
+        // Subscription ID logging removed to prevent sensitive identifier exposure
 
         // Only process active subscriptions for updates
         if (subscription.status === 'active' && subscription.customer) {
-          console.log('Processing subscription update:', subscription.id)
+          // Subscription ID logging removed to prevent sensitive identifier exposure
 
           // Use product IDs directly - they are stable while price IDs can change
           const basicProductId = process.env.STRIPE_SUBSCRIPTION_ID_BASIC
@@ -753,8 +720,7 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
               ? item.price.product 
               : item.price.product?.id
             
-            console.log('Subscription item price ID:', priceId)
-            console.log('Subscription item product ID:', productId)
+            // Price ID and product ID logging removed to prevent sensitive identifier exposure
 
             if (productId === premiumProductId) {
               accessLevel = 'premium'
@@ -764,26 +730,26 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
             }
           }
 
-          console.log('Determined access level:', accessLevel)
+          // Access level logging removed (non-sensitive but keeping logs minimal)
 
           // Find and update user
           const user = await findUserByStripeId(subscription.customer as string)
 
           if (user) {
             await updateUserAccessLevel(user.id, accessLevel)
-            console.log('User access level updated due to subscription change')
+            // Logging removed - operation completed successfully
           } else {
-            console.log('User not found for subscription update:', subscription.customer)
+            // Customer ID logging removed to prevent sensitive identifier exposure
           }
         } else {
-          console.log('Skipping inactive subscription update:', subscription.status)
+          // Status logging is safe (non-sensitive)
         }
         break
       }
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice
-        console.log('Invoice payment succeeded:', invoice.id)
+        // Invoice ID logging removed to prevent sensitive identifier exposure
 
         // If this is a subscription invoice, ensure access is granted immediately (especially after upgrade)
         const invAny = invoice as any
@@ -813,7 +779,7 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
           const user = await findUserByStripeId(invAny.customer as string)
           if (user) {
             await updateUserAccessLevel(user.id, accessLevel)
-            console.log('User access updated on payment success:', user.email, accessLevel)
+            // User email logging removed to prevent PII exposure
           }
         }
         break
@@ -821,7 +787,7 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice
-        console.log('Invoice payment failed:', invoice.id)
+        // Invoice ID logging removed to prevent sensitive identifier exposure
         // Keep prior access; optionally notify user via email in future
         break
       }
@@ -831,7 +797,7 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
       case 'subscription_schedule.canceled':
       case 'subscription_schedule.released': {
         const schedule = event.data.object as Stripe.SubscriptionSchedule
-        console.log('Subscription schedule event:', event.type, schedule.id)
+        // Schedule ID logging removed to prevent sensitive identifier exposure
         // Access level will flip on the subsequent customer.subscription.updated when phase changes
         break
       }
@@ -839,17 +805,17 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
 
-        console.log('Subscription deleted:', subscription.id)
+        // Subscription ID logging removed to prevent sensitive identifier exposure
 
         // For subscription cancellations, downgrade user to free
         if (subscription.customer) {
-          console.log('Processing subscription cancellation:', subscription.id)
+          // Subscription ID logging removed to prevent sensitive identifier exposure
 
           const user = await findUserByStripeId(subscription.customer as string)
 
           if (user) {
             await updateUserAccessLevel(user.id, 'free')
-            console.log('User downgraded to free due to subscription cancellation')
+            // Logging removed - operation completed successfully
           }
         }
         break
@@ -858,9 +824,7 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
       case 'customer.created': {
         const customer = event.data.object as Stripe.Customer
 
-        console.log('Customer created:', customer.id)
-        console.log('Customer email:', customer.email)
-        console.log('Customer name:', customer.name)
+        // Customer ID, email, and name logging removed to prevent PII exposure
 
         // Only create user if we have an email and they don't already exist
         if (customer.email) {
@@ -871,10 +835,8 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
             const sanitizedName = sanitizeCustomerName(customer.name)
             
             if (customer.name && !sanitizedName) {
-              console.warn('Blocked invalid customer name during user creation:', {
-                customerId: customer.id,
-                reason: 'Name failed validation (likely credit card number or invalid format)'
-              })
+              // Customer ID logging removed to prevent sensitive identifier exposure
+              console.warn('Blocked invalid customer name during user creation - name failed validation (likely credit card number or invalid format)')
             }
             
             // Create new user with free access level (compatible with user API route)
@@ -884,14 +846,14 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
               stripeCustomerId: customer.id,
               accessLevel: 'free'
             } as any)
-            console.log('New user created from Stripe customer:', newUser)
+            // User object logging removed to prevent PII exposure
           } else {
             // Link Stripe customer ID to existing user if not already linked
             if (!existingUser.stripeCustomerId) {
               await linkStripeIdToUserId(existingUser.id, customer.id)
-              console.log('Linked Stripe customer ID to existing user:', existingUser.email)
+              // User email logging removed to prevent PII exposure
             } else {
-              console.log('User already exists with Stripe customer ID:', existingUser.email)
+              // User email logging removed to prevent PII exposure
             }
           }
         } else {
@@ -903,9 +865,7 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
       case 'customer.updated': {
         const customer = event.data.object as Stripe.Customer
 
-        console.log('Customer updated:', customer.id)
-        console.log('Customer email:', customer.email)
-        console.log('Customer name:', customer.name)
+        // Customer ID, email, and name logging removed to prevent PII exposure
 
         // Find user by Stripe customer ID
         const user = await findUserByStripeId(customer.id, customer.email)
@@ -924,11 +884,8 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
           if (sanitizedName && sanitizedName !== user.name) {
             updateData.name = sanitizedName
           } else if (customer.name && !sanitizedName) {
-            // Log when we block an invalid name (like a credit card number)
-            console.warn('Blocked invalid customer name update:', {
-              customerId: customer.id,
-              reason: 'Name failed validation (likely credit card number or invalid format)'
-            })
+            // Customer ID logging removed to prevent sensitive identifier exposure
+            console.warn('Blocked invalid customer name update - name failed validation (likely credit card number or invalid format)')
           }
 
           // IMPORTANT: Do NOT update email automatically to prevent login issues
@@ -938,14 +895,9 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
             if (!user.email || user.email.trim() === '') {
               // Only update if user has no email set (shouldn't happen but safety check)
               updateData.email = customer.email
-              console.log('Updating empty user email with customer email:', customer.email)
+              // Email logging removed to prevent PII exposure
             } else {
-              // Log the difference but don't update to preserve login capability
-              console.log('Email mismatch detected - preserving user login email:', {
-                userEmail: user.email,
-                customerEmail: customer.email,
-                message: 'User may have used different email for checkout'
-              })
+              // Email mismatch logging removed to prevent PII exposure
             }
           }
 
@@ -953,12 +905,12 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
           if (Object.keys(updateData).length > 1) {
             // More than just updatedAt
             await updateUserById(user.id, updateData)
-            console.log('User updated from Stripe customer changes:', user.email)
+            // User email logging removed to prevent PII exposure
           } else {
-            console.log('No meaningful changes to update for user:', user.email)
+            // User email logging removed to prevent PII exposure
           }
         } else {
-          console.log('User not found for customer update:', customer.id)
+          // Customer ID logging removed to prevent sensitive identifier exposure
         }
         break
       }
@@ -966,23 +918,22 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<voi
       case 'customer.deleted': {
         const customer = event.data.object as Stripe.Customer
 
-        console.log('Customer deleted:', customer.id)
-        console.log('Customer email:', customer.email)
+        // Customer ID and email logging removed to prevent PII exposure
 
         // Find user by Stripe customer ID
         const user = await findUserByStripeId(customer.id)
 
         if (user) {
           await updateUserById(user.id, { stripeCustomerId: null, accessLevel: 'free' })
-          console.log('User Stripe association removed and downgraded:', user.email)
+          // User email logging removed to prevent PII exposure
         } else {
-          console.log('User not found for customer deletion:', customer.id)
+          // Customer ID logging removed to prevent sensitive identifier exposure
         }
         break
       }
 
       default:
-        console.log('Unhandled webhook event type:', event.type)
+        // Event type logging is safe (non-sensitive)
     }
   } catch (error) {
     console.error('Error processing webhook event:', error)

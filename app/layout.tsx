@@ -5,6 +5,10 @@ import '@src/styles/globals.css'
 export const metadata = {
   title: 'Azure Next Stack - Auth Demo',
   description: 'Testing authentication with protected products and customer records',
+  // Add icon/favicon configuration
+  icons: {
+    icon: '/icon.png',
+  },
 }
 
 /**

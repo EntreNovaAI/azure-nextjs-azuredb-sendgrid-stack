@@ -164,7 +164,7 @@ export async function requestPasswordReset(email: string): Promise<ServiceRespon
         }
       )
 
-      console.log(`Password reset email sent to ${email}`)
+      // Email logging removed to prevent PII exposure
     } catch (emailError) {
       console.error('Failed to send password reset email:', emailError)
       return {
@@ -240,11 +240,12 @@ export async function resetPassword(
     // Mark token as used
     const markedAsUsed = await markPasswordResetTokenAsUsed(token)
     if (!markedAsUsed) {
-      console.warn(`Failed to mark token as used for user ${resetToken.userId}`)
+      // User ID logging removed to prevent sensitive identifier exposure
+      console.warn('Failed to mark token as used')
       // Don't fail the request for this, as password was already updated
     }
 
-    console.log(`Password successfully reset for user ${resetToken.userId}`)
+    // User ID logging removed to prevent sensitive identifier exposure
 
     // Return success response
     return {

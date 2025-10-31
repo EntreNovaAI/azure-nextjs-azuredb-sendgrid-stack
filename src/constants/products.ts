@@ -2,7 +2,13 @@
  * Products Constants
  * Centralized product/subscription configuration
  * Single source of truth for all product information across the app
+ * 
+ * Features are now generated dynamically from the feature definitions system
+ * to ensure consistency between pricing cards and actual feature access.
  */
+
+import { FEATURES, type PlanId, type FeatureId } from '@/src/product/features/definitions'
+import { hasFeature, getFeatureLimit } from '@/src/product/features/access'
 
 // Product interface used throughout the application
 export interface Product {
@@ -23,18 +29,55 @@ export const PRODUCT_IDS = {
 } as const
 
 /**
+ * Format feature limit for display in pricing cards
+ * Converts limit values to user-friendly strings
+ */
+function formatFeatureLimit(limit: boolean | number | 'unlimited'): string {
+  if (limit === true) return 'Included'
+  if (limit === false) return 'Not included'
+  if (limit === 'unlimited') return 'Unlimited'
+  return limit.toString()
+}
+
+/**
+ * Generate feature list for a plan from the central feature definitions
+ * Returns formatted feature strings suitable for pricing cards
+ */
+function generateFeaturesForPlan(plan: PlanId): string[] {
+  const features: string[] = []
+  
+  // Iterate through all features and format them for display
+  for (const featureId of Object.keys(FEATURES) as FeatureId[]) {
+    const feature = FEATURES[featureId]
+    const limit = getFeatureLimit(plan, featureId)
+    
+    // Only include enabled features in the list
+    if (hasFeature(plan, featureId)) {
+      // Format based on limit type
+      if (typeof limit === 'number') {
+        features.push(`${feature.displayName}: ${limit}`)
+      } else if (limit === 'unlimited') {
+        features.push(`${feature.displayName}: Unlimited`)
+      } else {
+        features.push(feature.displayName)
+      }
+    }
+  }
+  
+  return features
+}
+
+/**
  * Product configurations
- * Update these to change product information across the entire app
+ * Features are now generated dynamically from the central feature definitions
+ * Update src/product/features/definitions.ts to change features across the app
  */
 export const products: Product[] = [
   {
     id: PRODUCT_IDS.FREE,
     title: '🚀 Free Plan',
     description: 'Perfect for beginners getting started with our platform.',
-    features: [
-      'Basic features',
-      'Email support'
-    ],
+    features: generateFeaturesForPlan('free'),
     variant: 'default'
     // Free plan has no price
   },
@@ -42,11 +85,7 @@ export const products: Product[] = [
     id: PRODUCT_IDS.BASIC,
     title: '⭐ Basic Plan',
     description: 'Advanced features for growing businesses.',
-    features: [
-      'All Free features',
-      'Priority support',
-      'Advanced analytics'
-    ],
+    features: generateFeaturesForPlan('basic'),
     variant: 'basic'
     // Price is fetched dynamically from Stripe API
   },
@@ -54,11 +93,7 @@ export const products: Product[] = [
     id: PRODUCT_IDS.PREMIUM,
     title: '📱 Premium Plan',
     description: 'Complete solution for large organizations.',
-    features: [
-      'All Basic features',
-      'Custom integrations',
-      'Dedicated account manager'
-    ],
+    features: generateFeaturesForPlan('premium'),
     variant: 'premium'
     // Price is fetched dynamically from Stripe API
   }

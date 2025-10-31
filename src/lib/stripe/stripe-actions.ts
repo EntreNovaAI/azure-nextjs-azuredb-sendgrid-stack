@@ -33,7 +33,7 @@ export async function createCheckoutAction(productId: string): Promise<ActionRes
       }
     }
 
-    console.log('Creating checkout session for authenticated user:', userSession.user.email)
+    // User email logging removed to prevent PII exposure
 
     // Call the service function
     const result = await createCheckoutSession(productId, userSession.user.email)
@@ -123,7 +123,7 @@ export async function cancelSubscriptionAction(stripeCustomerId: string): Promis
  */
 async function getPriceIdFromProductId(stripeProductId: string): Promise<string | null> {
   try {
-    console.log('Fetching price for product:', stripeProductId)
+    // Product ID logging removed to prevent sensitive identifier exposure
     
     // Query Stripe API for all active prices associated with this product
     const prices = await stripe.prices.list({
@@ -135,14 +135,15 @@ async function getPriceIdFromProductId(stripeProductId: string): Promise<string 
     // Return the first active price ID, or null if none found
     if (prices.data.length > 0) {
       const priceId = prices.data[0].id
-      console.log('Found price ID:', priceId)
+      // Price ID logging removed to prevent sensitive identifier exposure
       return priceId
     }
     
-    console.log('No active prices found for product:', stripeProductId)
+    // Product ID logging removed to prevent sensitive identifier exposure
     return null
   } catch (error) {
-    console.error('Error fetching price for product:', stripeProductId, error)
+    // Product ID logging removed from error handler to prevent sensitive identifier exposure
+    console.error('Error fetching price for product:', error)
     return null
   }
 }
@@ -235,7 +236,7 @@ export async function upgradeSubscriptionAction(newProductId: string): Promise<A
       try {
         const newAccessLevel = newProductId === 'premium' ? 'premium' : 'basic'
         await updateUserById(user.id, { accessLevel: newAccessLevel })
-        console.log('User access level updated immediately to:', newAccessLevel)
+        // Access level logging removed (non-sensitive but keeping logs minimal)
       } catch (dbError) {
         console.error('Failed to update user access level immediately:', dbError)
         // Don't fail the whole operation - webhook will handle it
@@ -315,16 +316,13 @@ export async function fetchStripePricesAction(): Promise<ActionResponse> {
     // Import stripe client dynamically to use in server action
     const { stripe } = await import('./stripe-client')
     
-    console.log('=== FETCHING STRIPE PRICES ===')
-    console.log('Basic product ID from env:', process.env.STRIPE_SUBSCRIPTION_ID_BASIC)
-    console.log('Premium product ID from env:', process.env.STRIPE_SUBSCRIPTION_ID_PREMIUM)
+    // Product ID logging removed to prevent sensitive identifier exposure
     
     // Get product IDs from environment and fetch their active price IDs
     const basicPriceId = await mapProductToPriceId('basic')
     const premiumPriceId = await mapProductToPriceId('premium')
     
-    console.log('Resolved basic price ID:', basicPriceId)
-    console.log('Resolved premium price ID:', premiumPriceId)
+    // Price ID logging removed to prevent sensitive identifier exposure
     
     // Initialize result object
     const priceData: {
@@ -338,7 +336,7 @@ export async function fetchStripePricesAction(): Promise<ActionResponse> {
     // Fetch basic plan price if configured
     if (basicPriceId) {
       try {
-        console.log('Retrieving basic price with ID:', basicPriceId)
+        // Price ID logging removed to prevent sensitive identifier exposure
         const basicPrice = await stripe.prices.retrieve(basicPriceId)
         if (basicPrice.unit_amount && basicPrice.currency && basicPrice.recurring?.interval) {
           priceData.basic = {
@@ -346,7 +344,7 @@ export async function fetchStripePricesAction(): Promise<ActionResponse> {
             currency: basicPrice.currency.toUpperCase(),
             interval: basicPrice.recurring.interval
           }
-          console.log('Successfully fetched basic price:', priceData.basic)
+          // Price data logging removed to prevent sensitive financial data exposure
         }
       } catch (err) {
         console.error('Failed to fetch basic price from Stripe:', err)
@@ -359,7 +357,7 @@ export async function fetchStripePricesAction(): Promise<ActionResponse> {
     // Fetch premium plan price if configured
     if (premiumPriceId) {
       try {
-        console.log('Retrieving premium price with ID:', premiumPriceId)
+        // Price ID logging removed to prevent sensitive identifier exposure
         const premiumPrice = await stripe.prices.retrieve(premiumPriceId)
         if (premiumPrice.unit_amount && premiumPrice.currency && premiumPrice.recurring?.interval) {
           priceData.premium = {
@@ -367,7 +365,7 @@ export async function fetchStripePricesAction(): Promise<ActionResponse> {
             currency: premiumPrice.currency.toUpperCase(),
             interval: premiumPrice.recurring.interval
           }
-          console.log('Successfully fetched premium price:', priceData.premium)
+          // Price data logging removed to prevent sensitive financial data exposure
         }
       } catch (err) {
         console.error('Failed to fetch premium price from Stripe:', err)

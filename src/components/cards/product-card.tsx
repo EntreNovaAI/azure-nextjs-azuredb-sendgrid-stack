@@ -137,14 +137,7 @@ export function ProductCard({
         const immediate = (preview.data.prorationAmountNow ?? preview.data.amountDue ?? 0) / 100
         const currency = (preview.data.currency || 'usd').toUpperCase()
         
-        // Log preview data for debugging
-        console.log('Upgrade preview data:', {
-          immediate,
-          prorationAmountNow: preview.data.prorationAmountNow,
-          amountDue: preview.data.amountDue,
-          total: preview.data.total,
-          currency: preview.data.currency
-        })
+        // Preview data logging removed to prevent sensitive financial data exposure
         
         // Build confirmation message with more context
         let confirmMessage = `You are upgrading from Basic to Premium.\n\n`

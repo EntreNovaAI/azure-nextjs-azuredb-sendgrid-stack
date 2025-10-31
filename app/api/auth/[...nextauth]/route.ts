@@ -40,13 +40,13 @@ export const authOptions: NextAuthOptions = {
           const user = await getUserByEmailWithPassword(credentials.email)
           
           if (!user) {
-            console.log('User not found:', credentials.email)
+            // Email logging removed to prevent PII exposure
             return null
           }
 
           // Check if user has a password (might be OAuth-only user)
           if (!user.password) {
-            console.log('User has no password set:', credentials.email)
+            // Email logging removed to prevent PII exposure
             return null
           }
 
@@ -54,7 +54,7 @@ export const authOptions: NextAuthOptions = {
           const isValidPassword = await verifyPassword(credentials.password, user.password)
           
           if (!isValidPassword) {
-            console.log('Invalid password for user:', credentials.email)
+            // Email logging removed to prevent PII exposure
             return null
           }
 

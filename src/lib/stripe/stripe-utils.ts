@@ -25,13 +25,11 @@ export function determineAccessLevelFromLineItems(
     return 'free' // Default to free if configuration is missing
   }
   
-  console.log('🔍 Comparing product IDs:')
-  console.log('Expected Basic Product ID:', basicProductId)
-  console.log('Expected Premium Product ID:', premiumProductId)
+  // Product ID and price ID logging removed to prevent sensitive identifier exposure
+  // These identifiers are sensitive and should not be logged
   
   // Check each line item to find the matching product ID
   for (const item of lineItems) {
-    console.log('Processing line item:', item)
     const priceId = item.price?.id
     // Extract product ID from the price object
     // Can be either a string ID or a full product object
@@ -39,28 +37,15 @@ export function determineAccessLevelFromLineItems(
       ? item.price.product 
       : item.price?.product?.id
     
-    console.log('Found price ID in line item:', priceId)
-    console.log('Found product ID in line item:', productId)
-    
-    // Compare product IDs with detailed logging
+    // Compare product IDs without logging sensitive identifiers
     if (productId === premiumProductId) {
-      console.log('✅ Matched premium subscription by product ID!')
       return 'premium'
     } else if (productId === basicProductId) {
-      console.log('✅ Matched basic subscription by product ID!')
       return 'basic'
-    } else {
-      console.log('⚠️ Product ID does not match basic or premium')
-      console.log(`   Line item product: ${productId}`)
-      console.log(`   Basic product: ${basicProductId}`)
-      console.log(`   Premium product: ${premiumProductId}`)
-      console.log(`   Match basic? ${productId === basicProductId}`)
-      console.log(`   Match premium? ${productId === premiumProductId}`)
     }
   }
   
   // Default to free if no matching product ID found
-  console.log('❌ No matching product ID found - defaulting to free')
   return 'free'
 }
 
@@ -156,12 +141,8 @@ export function extractUserUpdateData(
   basicProductId?: string,
   premiumProductId?: string
 ) {
-  console.log('=== PROCESSING STRIPE SESSION DATA ===')
-  console.log('Session data keys:', Object.keys(sessionData))
-  console.log('Customer ID type:', typeof sessionData.customer_id)
-  console.log('Customer ID value:', sessionData.customer_id)
-  console.log('Customer email:', sessionData.customer_email)
-  console.log('Line items count:', sessionData.line_items?.length || 0)
+  // Session data logging removed to prevent sensitive customer data exposure
+  // Customer IDs, emails, and session data are sensitive and should not be logged
   
   const accessLevel = determineAccessLevelFromLineItems(
     sessionData.line_items || [], 
@@ -178,9 +159,8 @@ export function extractUserUpdateData(
     customerEmail: sessionData.customer_email
   }
   
-  console.log('=== EXTRACTED USER UPDATE DATA ===')
-  console.log('Result:', result)
-  console.log('=== END PROCESSING ===')
+  // Update data logging removed to prevent sensitive customer data exposure
+  // Result contains customer ID and email which are sensitive
   
   return result
 }

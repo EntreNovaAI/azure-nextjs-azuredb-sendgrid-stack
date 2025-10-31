@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useTheme } from 'next-themes'
 import { ThemeToggle } from '@components/shared'
 import { getColors } from '@constants/colors'
@@ -28,10 +29,17 @@ export function AuthLayout({
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background to-muted/20">
-      {/* Minimal Header with Theme Toggle */}
+      {/* Minimal Header with Theme Toggle and actual logo */}
       <header className="w-full p-4 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <span className="text-2xl">🚀</span>
+          {/* Use actual icon.png instead of emoji */}
+          <Image 
+            src="/icon.png" 
+            alt="EntreNova Logo" 
+            width={32} 
+            height={32} 
+            className="w-8 h-8"
+          />
           <span 
             className="text-lg font-bold bg-gradient-to-r bg-clip-text text-transparent"
             style={{

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
@@ -41,9 +42,16 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-[1200px] mx-auto px-2 sm:px-4 flex h-16 items-center justify-between gap-2">
-        {/* Logo/Brand - responsive sizing */}
+        {/* Logo/Brand - responsive sizing with actual icon */}
         <Link href="/" className="flex items-center gap-1 sm:gap-2 hover:opacity-80 transition-opacity">
-          <span className="text-2xl sm:text-4xl">🚀</span>
+          {/* Use actual icon.png instead of emoji */}
+          <Image 
+            src="/icon.png" 
+            alt="EntreNova Logo" 
+            width={40} 
+            height={40} 
+            className="w-8 h-8 sm:w-10 sm:h-10"
+          />
           <h1 
             className="text-base sm:text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent whitespace-nowrap"
             style={{

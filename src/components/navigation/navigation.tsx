@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 import { useTheme } from 'next-themes'
 import { LoginButton } from '@auth/components'
@@ -21,7 +22,7 @@ export function Navigation() {
     // Modern navigation with transparent background and glass effect
     <nav className="bg-white/5 backdrop-blur-lg border-b border-white/10 py-4">
       <div className="max-w-[1200px] mx-auto px-4 flex justify-between items-center">
-        {/* Logo/Brand */}
+        {/* Logo/Brand with actual icon */}
         <Link href="/" className="no-underline">
           {/* Modern brand with gradient text using brand colors from colors.ts */}
           <h1 
@@ -30,7 +31,15 @@ export function Navigation() {
               backgroundImage: `linear-gradient(to right, ${colors.primary}, ${colors.secondary}, ${colors.accent})`
             }}
           >
-            <span className="text-3xl">🚀</span> Azure Next Stack
+            {/* Use actual icon.png instead of emoji */}
+            <Image 
+              src="/icon.png" 
+              alt="EntreNova Logo" 
+              width={36} 
+              height={36} 
+              className="w-9 h-9"
+            />
+            Azure Next Stack
           </h1>
         </Link>
 
