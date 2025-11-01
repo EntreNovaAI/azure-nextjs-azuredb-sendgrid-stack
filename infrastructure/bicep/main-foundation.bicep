@@ -78,18 +78,22 @@ param deployMonitoring bool = true
 // Variables
 // ============================================================================
 
+// Generate short unique suffix (5 chars) for resource naming
+// This keeps total names within Azure limits (e.g., Key Vault: 24 chars max)
+var uniqueSuffix = substring(uniqueString(resourceGroup().id), 0, 5)
+
 // Naming convention: {prefix}-{resource-type}-{suffix}
-var sqlServerName = '${prefix}-sql-${uniqueString(resourceGroup().id)}'
+var sqlServerName = '${prefix}-sql-${uniqueSuffix}'
 var sqlDatabaseName = '${prefix}-db'
-var acrName = '${prefix}acr${uniqueString(resourceGroup().id)}'
-var keyVaultName = '${prefix}-kv-${uniqueString(resourceGroup().id)}'
-var containerAppEnvName = '${prefix}-env-${uniqueString(resourceGroup().id)}'
+var acrName = '${prefix}acr${uniqueSuffix}'
+var keyVaultName = '${prefix}-kv-${uniqueSuffix}'
+var containerAppEnvName = '${prefix}-env-${uniqueSuffix}'
 var containerAppName = '${prefix}-app'
-var storageAccountName = '${prefix}st${uniqueString(resourceGroup().id)}'
-var openAIAccountName = '${prefix}-openai-${uniqueString(resourceGroup().id)}'
-var webPubSubName = '${prefix}-pubsub-${uniqueString(resourceGroup().id)}'
-var logAnalyticsName = '${prefix}-logs-${uniqueString(resourceGroup().id)}'
-var appInsightsName = '${prefix}-insights-${uniqueString(resourceGroup().id)}'
+var storageAccountName = '${prefix}st${uniqueSuffix}'
+var openAIAccountName = '${prefix}-openai-${uniqueSuffix}'
+var webPubSubName = '${prefix}-pubsub-${uniqueSuffix}'
+var logAnalyticsName = '${prefix}-logs-${uniqueSuffix}'
+var appInsightsName = '${prefix}-insights-${uniqueSuffix}'
 
 // ============================================================================
 // Module: Azure SQL Database

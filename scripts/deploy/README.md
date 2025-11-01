@@ -2,6 +2,50 @@
 
 This directory contains scripts for deploying the application to **Azure production environment**.
 
+## 📋 Environment Variables Strategy
+
+**IMPORTANT:** The deployment scripts use a smart approach to preserve your development configuration:
+
+### How It Works
+
+1. **Start with `.env.local`**: Your development environment file contains all your settings (Google Auth, MailerSend, Stripe test keys, etc.)
+
+2. **Scripts copy and update**: Each deployment script:
+   - Copies `.env.local` → `.env.production` (if it doesn't exist)
+   - Updates ONLY the deployment-specific variables
+   - Preserves everything else (Google Auth, email service, etc.)
+
+3. **Variables updated by deployment**:
+   - Azure SQL Database credentials (from `01_deploy_infrastructure.sh`)
+   - Azure Container Registry info (from `01_deploy_infrastructure.sh`)
+   - Azure Key Vault info (from `01_deploy_infrastructure.sh`)
+   - Stripe production keys (from `03_configure_stripe.sh`)
+   - Container App URLs (from `05_deploy_container_app.sh`)
+   - NextAuth URL (from `05_deploy_container_app.sh`)
+
+4. **Variables preserved from `.env.local`**:
+   - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
+   - `MAILERSEND_API_KEY` / `MAILERSEND_FROM_EMAIL`
+   - Any other custom environment variables
+
+### Why This Approach?
+
+✅ **No duplicate work**: Google Auth setup done once in `.env.local`  
+✅ **Consistency**: Same credentials across dev/prod where appropriate  
+✅ **Safety**: Deployment scripts only update what they manage  
+✅ **Flexibility**: Easy to override any variable manually in `.env.production`
+
+### Before You Deploy
+
+Make sure your `.env.local` is complete with:
+- ✅ Google OAuth credentials
+- ✅ MailerSend API key and from email
+- ✅ Any other services you use in development
+
+The deployment scripts will handle the Azure-specific variables!
+
+---
+
 ## Prerequisites
 
 ### Required Tools

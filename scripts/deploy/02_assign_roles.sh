@@ -200,14 +200,25 @@ set_subscription() {
     CURRENT_SUB=$(az account show --query name -o tsv)
     print_info "Current subscription: $CURRENT_SUB"
     
-    if ! confirm "Use this subscription?"; then
-      print_info "Available subscriptions:"
-      az account list --query "[].{Name:name, ID:id, Default:isDefault}" -o table
-      printf "\nEnter subscription ID: "
-      read -r SUBSCRIPTION_ID
-      az account set --subscription "$SUBSCRIPTION_ID"
-      print_success "Switched to subscription: $SUBSCRIPTION_ID"
-    fi
+    # Ask with default to yes (just press Enter to continue)
+    printf "Use this subscription? [Y/n]: "
+    read -r response
+    
+    case "$response" in
+      [nN]|[nN][oO])
+        # User wants to change subscription
+        print_info "Available subscriptions:"
+        az account list --query "[].{Name:name, ID:id, Default:isDefault}" -o table
+        printf "\nEnter subscription ID: "
+        read -r SUBSCRIPTION_ID
+        az account set --subscription "$SUBSCRIPTION_ID"
+        print_success "Switched to subscription: $SUBSCRIPTION_ID"
+        ;;
+      *)
+        # Empty or any other input = yes (default)
+        print_success "Using subscription: $CURRENT_SUB"
+        ;;
+    esac
   fi
 }
 
@@ -218,26 +229,38 @@ set_subscription() {
 get_resource_info() {
   print_header "Retrieving Resource Information"
   
-  # Get resource group from Container App
-  RESOURCE_GROUP=$(az containerapp show --name "$CONTAINER_APP_NAME" --query resourceGroup -o tsv 2>/dev/null || true)
+  # Try to get resource group from .env.production first
+  RESOURCE_GROUP=$(grep "^RESOURCE_GROUP=" "$ENV_FILE" | cut -d '=' -f2 || true)
   
   if [ -z "$RESOURCE_GROUP" ]; then
-    print_error "Container App not found: $CONTAINER_APP_NAME"
+    # Fallback: try to get from ACR
+    RESOURCE_GROUP=$(az acr show --name "$ACR_NAME" --query resourceGroup -o tsv 2>/dev/null || true)
+  fi
+  
+  if [ -z "$RESOURCE_GROUP" ]; then
+    print_error "Could not determine resource group"
     print_info "Make sure you ran 01_deploy_infrastructure.sh successfully"
     exit 1
   fi
   
   print_success "Resource Group: $RESOURCE_GROUP"
   
-  # Get Container App managed identity principal ID
-  PRINCIPAL_ID=$(az containerapp show \
-    --name "$CONTAINER_APP_NAME" \
+  # Get managed identity by name (created in Phase 1)
+  # Format: {container-app-name}-identity
+  IDENTITY_NAME="${CONTAINER_APP_NAME}-identity"
+  
+  print_info "Looking for managed identity: $IDENTITY_NAME"
+  
+  PRINCIPAL_ID=$(az identity show \
+    --name "$IDENTITY_NAME" \
     --resource-group "$RESOURCE_GROUP" \
-    --query 'identity.userAssignedIdentities.*.principalId | [0]' \
-    -o tsv)
+    --query principalId \
+    -o tsv 2>/dev/null || true)
   
   if [ -z "$PRINCIPAL_ID" ] || [ "$PRINCIPAL_ID" = "null" ]; then
-    print_error "Could not retrieve managed identity principal ID"
+    print_error "Managed identity not found: $IDENTITY_NAME"
+    print_info "Make sure you ran 01_deploy_infrastructure.sh successfully"
+    print_info "The managed identity should have been created in Phase 1"
     exit 1
   fi
   

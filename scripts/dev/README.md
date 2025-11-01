@@ -20,7 +20,13 @@ bash scripts/dev/01_stripe_setup.sh
 
 ## Scripts
 
-### 1. 01_stripe_setup.sh - Stripe Test Mode Setup
+### 1. 00_setup_links.md - Setup Service Links
+
+Clickable links to Stripe and Google Cloud Console for quick setup access.
+
+---
+
+### 2. 01_stripe_setup.sh - Stripe Test Mode Setup
 
 Sets up Stripe test mode with subscription products.
 
@@ -59,7 +65,7 @@ bash scripts/dev/01_stripe_setup.sh --yes
 
 ---
 
-### 2. dev_with_tunnel.sh - Development Server with Public Tunnel
+### 3. dev_with_tunnel.sh - Development Server with Public Tunnel
 
 Starts Next.js dev server with a public tunnel for webhook testing.
 
@@ -105,13 +111,16 @@ bash scripts/dev/dev_with_tunnel.sh
 ### First-Time Setup
 
 ```bash
-# 1. Copy environment template
+# 1. Open setup links file to access required services
+# Open scripts/dev/00_setup_links.md in your IDE or browser
+
+# 2. Copy environment template
 cp .env.example .env.local
 
-# 2. Set up Stripe test mode
+# 3. Set up Stripe test mode
 bash scripts/dev/01_stripe_setup.sh
 
-# 3. Start dev server with tunnel (for webhook testing)
+# 4. Start dev server with tunnel (for webhook testing)
 bash scripts/dev/dev_with_tunnel.sh
 ```
 

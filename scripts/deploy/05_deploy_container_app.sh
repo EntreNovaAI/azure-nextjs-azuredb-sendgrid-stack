@@ -380,36 +380,63 @@ extract_outputs() {
 update_env_file() {
   print_header "Updating $ENV_FILE"
   
-  # Update CONTAINER_APP_FQDN
-  if grep -q "^CONTAINER_APP_FQDN=" "$ENV_FILE"; then
-    # Use different delimiter for sed since URL contains /
-    sed -i.bak "s|^CONTAINER_APP_FQDN=.*|CONTAINER_APP_FQDN=${CONTAINER_APP_FQDN}|" "$ENV_FILE"
-  else
-    printf "CONTAINER_APP_FQDN=%s\n" "$CONTAINER_APP_FQDN" >> "$ENV_FILE"
-  fi
+  # Create a temporary file for updates
+  local temp_file
+  temp_file=$(mktemp -t env.XXXXXX)
   
-  # Update CONTAINER_APP_URL
-  if grep -q "^CONTAINER_APP_URL=" "$ENV_FILE"; then
-    sed -i.bak "s|^CONTAINER_APP_URL=.*|CONTAINER_APP_URL=${CONTAINER_APP_URL}|" "$ENV_FILE"
-  else
-    printf "CONTAINER_APP_URL=%s\n" "$CONTAINER_APP_URL" >> "$ENV_FILE"
-  fi
+  # Copy existing file to temp
+  cp "$ENV_FILE" "$temp_file"
   
-  # Update NEXTAUTH_URL if it's empty
-  if grep -q "^NEXTAUTH_URL=$" "$ENV_FILE" || grep -q "^NEXTAUTH_URL=\"\"$" "$ENV_FILE"; then
-    sed -i.bak "s|^NEXTAUTH_URL=.*|NEXTAUTH_URL=${CONTAINER_APP_URL}|" "$ENV_FILE"
-    print_info "Updated NEXTAUTH_URL to: $CONTAINER_APP_URL"
-  fi
+  # Function to update or add a variable
+  # This preserves all other variables in the file
+  update_or_add_var() {
+    local key="$1"
+    local value="$2"
+    local temp_file="${3:-$temp_file}"  # Use parameter or fall back to outer scope
+    
+    # Escape special characters for sed (/, &, \, newlines)
+    local escaped_value=$(printf '%s' "$value" | sed 's/[&/\]/\\&/g')
+    
+    # Check if variable exists
+    if grep -q "^${key}=" "$temp_file"; then
+      # Update existing variable (portable sed)
+      local sed_temp
+      sed_temp=$(mktemp -t sed.XXXXXX)
+      sed "s|^${key}=.*|${key}=${escaped_value}|" "$temp_file" > "$sed_temp"
+      mv "$sed_temp" "$temp_file"
+    elif grep -q "^#${key}=" "$temp_file"; then
+      # Variable exists but is commented out - uncomment and update
+      local sed_temp
+      sed_temp=$(mktemp -t sed.XXXXXX)
+      sed "s|^#${key}=.*|${key}=${escaped_value}|" "$temp_file" > "$sed_temp"
+      mv "$sed_temp" "$temp_file"
+    else
+      # Add new variable at the end
+      printf "\n%s=%s\n" "$key" "$value" >> "$temp_file"
+    fi
+  }
+  
+  print_info "Updating Container App URLs..."
+  
+  # Update Container App variables
+  update_or_add_var "CONTAINER_APP_FQDN" "$CONTAINER_APP_FQDN" "$temp_file"
+  update_or_add_var "CONTAINER_APP_URL" "$CONTAINER_APP_URL" "$temp_file"
+  
+  # Update NEXTAUTH_URL (set to Container App URL for production)
+  update_or_add_var "NEXTAUTH_URL" "$CONTAINER_APP_URL" "$temp_file"
+  print_info "Updated NEXTAUTH_URL to: $CONTAINER_APP_URL"
   
   # Add PREFIX if not already there (for future scripts)
-  if ! grep -q "^PREFIX=" "$ENV_FILE"; then
-    printf "PREFIX=%s\n" "$PREFIX" >> "$ENV_FILE"
+  if ! grep -q "^PREFIX=" "$temp_file"; then
+    printf "\n# Resource prefix for Azure resources\nPREFIX=%s\n" "$PREFIX" >> "$temp_file"
   fi
   
-  # Clean up backup file
-  rm -f "${ENV_FILE}.bak"
+  # Move temp file to original
+  mv "$temp_file" "$ENV_FILE"
   
-  print_success "$ENV_FILE updated with Container App URL"
+  print_success "$ENV_FILE updated with Container App URLs"
+  print_info "✓ Updated: CONTAINER_APP_FQDN, CONTAINER_APP_URL, NEXTAUTH_URL"
+  print_info "✓ All other variables preserved (Google Auth, MailerSend, Stripe, etc.)"
 }
 
 # ============================================================================

@@ -357,7 +357,18 @@ create_subscription_products() {
 update_env_file() {
   print_header "Update $ENV_FILE"
   
-  # Create a temporary file
+  # Check if .env.production exists, if not and .env.local exists, copy it
+  if [ ! -f "$ENV_FILE" ] && [ -f ".env.local" ]; then
+    print_info "Creating $ENV_FILE from .env.local..."
+    cp .env.local "$ENV_FILE"
+    print_success "Copied .env.local to $ENV_FILE"
+  elif [ ! -f "$ENV_FILE" ]; then
+    print_error "$ENV_FILE not found and .env.local not available"
+    print_info "Run scripts/deploy/01_deploy_infrastructure.sh first"
+    exit 1
+  fi
+  
+  # Create a temporary file for updates
   local temp_file
   temp_file=$(mktemp -t env.XXXXXX)
   
@@ -365,25 +376,37 @@ update_env_file() {
   cp "$ENV_FILE" "$temp_file"
   
   # Function to update or add a variable
+  # This preserves all other variables in the file
   update_or_add_var() {
     local key="$1"
     local value="$2"
-    local temp_file="$3"
+    local temp_file="${3:-$temp_file}"  # Use parameter or fall back to outer scope
+    
+    # Escape special characters for sed (/, &, \, newlines)
+    local escaped_value=$(printf '%s' "$value" | sed 's/[&/\]/\\&/g')
     
     # Check if variable exists
     if grep -q "^${key}=" "$temp_file"; then
       # Update existing variable (portable sed)
       local sed_temp
       sed_temp=$(mktemp -t sed.XXXXXX)
-      sed "s|^${key}=.*|${key}=${value}|" "$temp_file" > "$sed_temp"
+      sed "s|^${key}=.*|${key}=${escaped_value}|" "$temp_file" > "$sed_temp"
+      mv "$sed_temp" "$temp_file"
+    elif grep -q "^#${key}=" "$temp_file"; then
+      # Variable exists but is commented out - uncomment and update
+      local sed_temp
+      sed_temp=$(mktemp -t sed.XXXXXX)
+      sed "s|^#${key}=.*|${key}=${escaped_value}|" "$temp_file" > "$sed_temp"
       mv "$sed_temp" "$temp_file"
     else
-      # Add new variable
-      printf "\n%s=%s" "$key" "$value" >> "$temp_file"
+      # Add new variable at the end
+      printf "\n%s=%s\n" "$key" "$value" >> "$temp_file"
     fi
   }
   
-  # Update variables (DO NOT echo values to console)
+  print_info "Updating Stripe configuration variables..."
+  
+  # Update variables (DO NOT echo values to console for security)
   update_or_add_var "STRIPE_SECRET_KEY" "$STRIPE_SECRET_KEY" "$temp_file"
   update_or_add_var "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" "$STRIPE_PUBLISHABLE_KEY" "$temp_file"
   update_or_add_var "STRIPE_SUBSCRIPTION_ID_BASIC" "$BASIC_PRODUCT_ID" "$temp_file"
@@ -393,8 +416,10 @@ update_env_file() {
   mv "$temp_file" "$ENV_FILE"
   
   print_success "$ENV_FILE updated with Stripe credentials"
-  print_info "Updated variables: STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_SUBSCRIPTION_ID_BASIC, STRIPE_SUBSCRIPTION_ID_PREMIUM"
-  print_warning "Values are NOT displayed for security"
+  print_info "✓ Updated Stripe variables (existing vars like Google Auth preserved)"
+  print_info "✓ Updated: STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"
+  print_info "✓ Updated: STRIPE_SUBSCRIPTION_ID_BASIC, STRIPE_SUBSCRIPTION_ID_PREMIUM"
+  print_warning "Secret values are NOT displayed for security"
 }
 
 # ============================================================================
