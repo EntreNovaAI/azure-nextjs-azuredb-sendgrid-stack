@@ -267,11 +267,57 @@ get_resource_info() {
   print_success "Managed Identity Principal ID: $PRINCIPAL_ID"
   
   # Get ACR resource ID
-  ACR_ID=$(az acr show --name "$ACR_NAME" --query id -o tsv)
+  print_info "Retrieving ACR resource ID for: $ACR_NAME (in resource group: $RESOURCE_GROUP)..."
+  ACR_ID=$(az acr show --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" --query id -o tsv 2>&1)
+  
+  # Check if ACR query failed (e.g., wrong subscription or wrong ACR name)
+  if [[ "$ACR_ID" == *"ERROR"* ]] || [[ "$ACR_ID" == *"ResourceGroupNotFound"* ]] || [ -z "$ACR_ID" ]; then
+    print_error "Failed to retrieve ACR resource ID"
+    print_error "Error: $ACR_ID"
+    printf "\n"
+    print_warning "Possible causes:"
+    printf "\n"
+    print_info "1. ACR '$ACR_NAME' doesn't exist in resource group '$RESOURCE_GROUP'"
+    print_info "   Check: az acr list --resource-group $RESOURCE_GROUP --query \"[].name\" -o table"
+    printf "\n"
+    print_info "2. You're in the wrong Azure subscription"
+    print_info "   Current subscription:"
+    az account show --query "{Name:name, ID:id}" -o table
+    printf "\n"
+    print_info "   List all subscriptions: az account list -o table"
+    print_info "   Switch subscription: az account set --subscription <correct-subscription-id>"
+    printf "\n"
+    print_info "3. The ACR_NAME in $ENV_FILE is from a previous/different deployment"
+    print_info "   Check: grep ACR_NAME $ENV_FILE"
+    print_info "   If incorrect, you may need to re-run 01_deploy_infrastructure.sh"
+    printf "\n"
+    exit 1
+  fi
   print_success "ACR Resource ID: $ACR_ID"
   
   # Get Key Vault resource ID
-  KV_ID=$(az keyvault show --name "$KEY_VAULT_NAME" --query id -o tsv)
+  print_info "Retrieving Key Vault resource ID for: $KEY_VAULT_NAME (in resource group: $RESOURCE_GROUP)..."
+  KV_ID=$(az keyvault show --name "$KEY_VAULT_NAME" --resource-group "$RESOURCE_GROUP" --query id -o tsv 2>&1)
+  
+  # Check if Key Vault query failed
+  if [[ "$KV_ID" == *"ERROR"* ]] || [[ "$KV_ID" == *"ResourceGroupNotFound"* ]] || [ -z "$KV_ID" ]; then
+    print_error "Failed to retrieve Key Vault resource ID"
+    print_error "Error: $KV_ID"
+    printf "\n"
+    print_warning "Possible causes:"
+    printf "\n"
+    print_info "1. Key Vault '$KEY_VAULT_NAME' doesn't exist in resource group '$RESOURCE_GROUP'"
+    print_info "   Check: az keyvault list --resource-group $RESOURCE_GROUP --query \"[].name\" -o table"
+    printf "\n"
+    print_info "2. You're in the wrong Azure subscription"
+    print_info "   Make sure you're in the same subscription where you ran 01_deploy_infrastructure.sh"
+    printf "\n"
+    print_info "3. The KEY_VAULT_NAME in $ENV_FILE is from a previous/different deployment"
+    print_info "   Check: grep KEY_VAULT_NAME $ENV_FILE"
+    print_info "   If incorrect, you may need to re-run 01_deploy_infrastructure.sh"
+    printf "\n"
+    exit 1
+  fi
   print_success "Key Vault Resource ID: $KV_ID"
 }
 

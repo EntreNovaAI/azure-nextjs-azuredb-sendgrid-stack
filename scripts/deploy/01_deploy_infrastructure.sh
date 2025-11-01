@@ -527,7 +527,48 @@ extract_outputs() {
     KEY_VAULT_URI=$(az deployment group show --resource-group "$RESOURCE_GROUP" --name "keyVaultDeployment" --query properties.outputs.keyVaultUri.value -o tsv)
   fi
   
-  print_success "Outputs extracted"
+  # Validate critical outputs were extracted (not null or empty)
+  print_info "Validating extracted outputs..."
+  
+  local validation_failed=false
+  
+  # Check required outputs
+  if [ -z "$SQL_SERVER_FQDN" ] || [ "$SQL_SERVER_FQDN" = "null" ]; then
+    print_error "Failed to extract SQL_SERVER_FQDN from deployment"
+    validation_failed=true
+  fi
+  
+  if [ -z "$ACR_NAME" ] || [ "$ACR_NAME" = "null" ]; then
+    print_error "Failed to extract ACR_NAME from deployment"
+    validation_failed=true
+  fi
+  
+  if [ -z "$ACR_LOGIN_SERVER" ] || [ "$ACR_LOGIN_SERVER" = "null" ]; then
+    print_error "Failed to extract ACR_LOGIN_SERVER from deployment"
+    validation_failed=true
+  fi
+  
+  if [ -z "$KEY_VAULT_NAME" ] || [ "$KEY_VAULT_NAME" = "null" ]; then
+    print_error "Failed to extract KEY_VAULT_NAME from deployment"
+    validation_failed=true
+  fi
+  
+  if [ -z "$CONTAINER_APP_NAME" ] || [ "$CONTAINER_APP_NAME" = "null" ]; then
+    print_error "Failed to extract CONTAINER_APP_NAME from deployment"
+    validation_failed=true
+  fi
+  
+  if [ "$validation_failed" = true ]; then
+    print_error "Output validation failed!"
+    print_info "This usually means the Bicep deployment didn't complete successfully"
+    print_info "Check the deployment outputs above for errors"
+    exit 1
+  fi
+  
+  print_success "Outputs extracted and validated"
+  print_info "ACR Name: $ACR_NAME"
+  print_info "Key Vault: $KEY_VAULT_NAME"
+  print_info "Container App: $CONTAINER_APP_NAME"
 }
 
 # ============================================================================
@@ -543,6 +584,15 @@ generate_env_file() {
     print_info "Please create .env.local first with your development configuration"
     print_info "This should include Google Auth credentials and other settings"
     exit 1
+  fi
+  
+  # Warn if .env.local contains old Azure resource names
+  if grep -q "^ACR_NAME=" ".env.local" 2>/dev/null; then
+    local old_acr_name=$(grep "^ACR_NAME=" ".env.local" | cut -d '=' -f2)
+    if [ -n "$old_acr_name" ] && [ "$old_acr_name" != "$ACR_NAME" ]; then
+      print_warning ".env.local contains old ACR_NAME: $old_acr_name"
+      print_info "This will be overwritten with new value: $ACR_NAME"
+    fi
   fi
   
   # Copy .env.local to .env.production (preserves Google Auth, MailerSend, etc.)

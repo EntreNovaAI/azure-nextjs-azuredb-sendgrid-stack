@@ -12,20 +12,47 @@ This command sets up the project for local development after cloning from git. I
 
 Follow these steps in order. Guide the user through each step clearly.
 
-### Step 1: Verify Prerequisites
+### Step 1: Run Automated Setup
 
-Check if the user has the required tools installed:
+**Execute the automated initialization script:**
 
-**Required:**
-- Node.js 20+ (`node --version`)
-- pnpm (`pnpm --version`)
-  - If not installed: `corepack enable && corepack prepare pnpm@latest --activate`
+```bash
+bash scripts/dev/00_init_setup.sh
+```
 
-**Optional (for full features):**
-- Azure CLI for Azure services (`az --version`)
-- SQL Server Management Studio (SSMS) or Azure Data Studio for database management
+This script will:
+- Detect your operating system and package manager
+- Check for all required and optional tools
+- Interactively offer to install missing prerequisites
+- Guide you through the installation process
 
-If any required tools are missing, inform the user and provide installation instructions.
+**What gets installed:**
+
+Critical (required):
+- Node.js 20+ LTS
+- pnpm package manager
+
+Deployment tools (optional, can skip):
+- Azure CLI
+- Bicep CLI
+- Docker
+
+Additional tools (optional, can skip):
+- jq (JSON processor)
+- Git (version control)
+- Stripe CLI (webhook testing)
+
+**Notes:**
+- All prompts default to [Y/n] for easy confirmation
+- You can skip optional tools and install them later
+- The script is safe to run multiple times
+- All actions are logged to `logs/init-setup.log`
+
+**If the automated script fails:**
+
+You can still install prerequisites manually. The required tools are:
+- Node.js 20+: Download from https://nodejs.org/
+- pnpm: Run `corepack enable && corepack prepare pnpm@latest --activate`
 
 ### Step 2: Install Dependencies
 
@@ -200,6 +227,12 @@ Once setup is complete, verify:
 
 ## Common Issues & Solutions
 
+**Automated setup script errors:**
+- Run `bash scripts/deploy/00_validate_prerequisites.sh` to see what's missing
+- Check `logs/init-setup.log` for detailed error messages
+- Some installations may require sudo/admin privileges
+- On Windows, use Git Bash or WSL for best compatibility
+
 **Database connection fails:**
 - Verify server address, port, username, password
 - For Azure SQL: ensure firewall allows your IP
@@ -220,6 +253,12 @@ Once setup is complete, verify:
 - NEXTAUTH_SECRET must be set
 - For Google OAuth: credentials must be valid
 - For webhooks: dev tunnels or public URL required
+
+**Installation troubleshooting:**
+- Node.js: If corepack fails, use `npm install -g pnpm` instead
+- Docker: On macOS/Windows, install Docker Desktop manually
+- Azure CLI: On Windows, download MSI from https://aka.ms/installazurecliwindows
+- Permission errors: Some commands may need `sudo` on Linux/macOS
 
 ## What's Next?
 

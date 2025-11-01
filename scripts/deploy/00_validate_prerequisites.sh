@@ -7,10 +7,79 @@
 #   Check tools, Azure login, permissions, and configurations
 #
 # Usage:
-#   bash scripts/deploy/00_validate_prerequisites.sh
+#   bash scripts/deploy/00_validate_prerequisites.sh [OPTIONS]
+#
+# Options:
+#   --check-only    Only validate, don't offer to install (default)
+#   --json          Output results in JSON format
+#   --help          Show this help message
+#
+# Exit Codes:
+#   0 - All checks passed
+#   1 - Critical errors found
+#   2 - Only warnings found (can continue)
 #
 
 set -euo pipefail
+
+# ============================================================================
+# Parse Command-Line Arguments
+# ============================================================================
+
+CHECK_ONLY=true
+JSON_OUTPUT=false
+SHOW_HELP=false
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --check-only)
+      CHECK_ONLY=true
+      shift
+      ;;
+    --json)
+      JSON_OUTPUT=true
+      shift
+      ;;
+    --help|-h)
+      SHOW_HELP=true
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
+# Show help if requested
+if [ "$SHOW_HELP" = true ]; then
+  cat << 'EOF'
+Azure Prerequisites Validation Script
+
+Usage:
+  bash scripts/deploy/00_validate_prerequisites.sh [OPTIONS]
+
+Options:
+  --check-only    Only validate, don't offer to install (default)
+  --json          Output results in JSON format
+  --help, -h      Show this help message
+
+Exit Codes:
+  0 - All checks passed
+  1 - Critical errors found
+  2 - Only warnings found (can continue)
+
+Examples:
+  # Basic validation
+  bash scripts/deploy/00_validate_prerequisites.sh
+
+  # JSON output for parsing
+  bash scripts/deploy/00_validate_prerequisites.sh --json
+
+EOF
+  exit 0
+fi
 
 # ============================================================================
 # Change to Project Root Directory
@@ -22,7 +91,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT"
 
-echo "Working from project root: $PROJECT_ROOT"
+if [ "$JSON_OUTPUT" = false ]; then
+  echo "Working from project root: $PROJECT_ROOT"
+fi
 
 # ============================================================================
 # Utility Functions
@@ -376,30 +447,51 @@ check_environment() {
 # ============================================================================
 
 show_summary() {
-  print_header "Validation Summary"
-  
-  printf "Errors:   %d\n" "$VALIDATION_ERRORS"
-  printf "Warnings: %d\n" "$VALIDATION_WARNINGS"
-  printf "\n"
-  
-  if [ "$VALIDATION_ERRORS" -eq 0 ]; then
-    print_success "All critical checks passed! ✨"
-    printf "\n"
-    print_info "You're ready to go! Next steps:"
-    printf "  1. Development: bash scripts/dev/01_stripe_setup.sh\n"
-    printf "  2. Production:  bash scripts/deploy/01_az_deploy_infra.sh\n"
-    printf "\n"
-    
-    if [ "$VALIDATION_WARNINGS" -gt 0 ]; then
-      print_warning "You have $VALIDATION_WARNINGS warnings"
-      print_info "Review warnings above and fix if necessary"
-    fi
-    
-    exit 0
+  if [ "$JSON_OUTPUT" = true ]; then
+    # Output JSON format
+    cat << EOF
+{
+  "status": "$([ "$VALIDATION_ERRORS" -eq 0 ] && echo "success" || echo "error")",
+  "errors": $VALIDATION_ERRORS,
+  "warnings": $VALIDATION_WARNINGS,
+  "can_continue": $([ "$VALIDATION_ERRORS" -eq 0 ] && echo "true" || echo "false")
+}
+EOF
   else
-    print_error "Validation failed with $VALIDATION_ERRORS errors"
-    print_info "Fix the errors above before deploying"
-    exit 1
+    # Standard output
+    print_header "Validation Summary"
+    
+    printf "Errors:   %d\n" "$VALIDATION_ERRORS"
+    printf "Warnings: %d\n" "$VALIDATION_WARNINGS"
+    printf "\n"
+    
+    if [ "$VALIDATION_ERRORS" -eq 0 ]; then
+      print_success "All critical checks passed! ✨"
+      printf "\n"
+      print_info "You're ready to go! Next steps:"
+      printf "  1. Development: bash scripts/dev/00_init_setup.sh\n"
+      printf "  2. Production:  bash scripts/deploy/01_deploy_infrastructure.sh\n"
+      printf "\n"
+      
+      if [ "$VALIDATION_WARNINGS" -gt 0 ]; then
+        print_warning "You have $VALIDATION_WARNINGS warnings"
+        print_info "Review warnings above and fix if necessary"
+      fi
+    else
+      print_error "Validation failed with $VALIDATION_ERRORS errors"
+      print_info "Run: bash scripts/dev/00_init_setup.sh to install missing tools"
+    fi
+  fi
+  
+  # Exit with appropriate code
+  if [ "$VALIDATION_ERRORS" -eq 0 ]; then
+    if [ "$VALIDATION_WARNINGS" -gt 0 ]; then
+      exit 2  # Warnings only
+    else
+      exit 0  # All good
+    fi
+  else
+    exit 1  # Errors found
   fi
 }
 
