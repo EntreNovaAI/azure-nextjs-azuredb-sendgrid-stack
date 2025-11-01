@@ -103,6 +103,10 @@ local.settings.json
 # Azure deployment artifacts
 *.zip
 
+# Azure Bicep - Compiled ARM Templates
+# These are auto-generated from .bicep files during deployment
+infrastructure/bicep/**/*.json
+
 # Prisma
 prisma/migrations/dev.db*
 prisma/migrations/
