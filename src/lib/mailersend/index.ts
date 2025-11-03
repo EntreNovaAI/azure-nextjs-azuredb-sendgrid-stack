@@ -8,12 +8,36 @@ export { EmailService } from './email-service';
 import type { EmailConfig, EmailRecipient, WelcomeEmailData, PasswordResetEmailData } from './schemas';
 import { EmailService } from './email-service';
 
-// Create and export a singleton instance
-export const emailService = new EmailService();
+/**
+ * IMPORTANT: Lazy initialization prevents build-time errors
+ * In production (Azure Container Apps), secrets are injected at runtime from Key Vault
+ * During Docker build, these env vars won't exist yet, so we defer initialization
+ */
 
-// Export individual functions for convenience
-export const sendEmail = (config: EmailConfig) => emailService.sendEmail(config);
+// Singleton instance holder (lazy initialization)
+let emailServiceInstance: EmailService | null = null;
+
+/**
+ * Get the EmailService singleton instance (lazy initialization)
+ * This prevents errors during Docker build when secrets aren't available yet
+ */
+function getEmailService(): EmailService {
+  if (!emailServiceInstance) {
+    emailServiceInstance = new EmailService();
+  }
+  return emailServiceInstance;
+}
+
+// Export lazy-initialized singleton instance
+export const emailService = {
+  get instance() {
+    return getEmailService();
+  }
+};
+
+// Export individual functions for convenience (with lazy initialization)
+export const sendEmail = (config: EmailConfig) => getEmailService().sendEmail(config);
 export const sendWelcomeEmail = (to: EmailRecipient, data: WelcomeEmailData) => 
-  emailService.sendWelcomeEmail(to, data);
+  getEmailService().sendWelcomeEmail(to, data);
 export const sendPasswordResetEmail = (to: EmailRecipient, data: PasswordResetEmailData) => 
-  emailService.sendPasswordResetEmail(to, data);
+  getEmailService().sendPasswordResetEmail(to, data);

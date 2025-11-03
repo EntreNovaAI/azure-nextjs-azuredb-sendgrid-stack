@@ -7,7 +7,7 @@
  */
 
 import { NextResponse } from 'next/server'
-import { getServerSession, type NextAuthOptions } from 'next-auth'
+import { getServerSession } from 'next-auth'
 import { hasFeature } from './access'
 import type { FeatureId, PlanId } from './definitions'
 
@@ -18,27 +18,25 @@ import type { FeatureId, PlanId } from './definitions'
  * Returns a 403 response if the feature is not available.
  * 
  * @param featureId - The feature ID to check
- * @param authOptions - Optional NextAuth options (if not provided, uses default)
  * @returns NextResponse with 403 error if feature unavailable, null if available
  * 
  * @example
  * // In an API route:
- * import { authOptions } from '@/app/api/auth/[...nextauth]/route'
- * 
  * export async function GET() {
- *   const forbidden = await requireFeature('api_calls', authOptions)
+ *   const forbidden = await requireFeature('api_calls')
  *   if (forbidden) return forbidden
  *   
  *   // Feature is available, proceed with logic
  * }
  */
 export async function requireFeature(
-  featureId: FeatureId,
-  authOptions?: NextAuthOptions
+  featureId: FeatureId
 ): Promise<NextResponse | null> {
-  const session = await getServerSession(authOptions)
+  // Get the current session (NextAuth automatically uses the configured authOptions)
+  const session = await getServerSession()
   const plan = (session?.user?.accessLevel ?? 'free') as PlanId
   
+  // Check if the user's plan has access to this feature
   if (!hasFeature(plan, featureId)) {
     return NextResponse.json(
       { error: 'Feature not available on your plan' },
@@ -56,25 +54,22 @@ export async function requireFeature(
  * error yourself.
  * 
  * @param featureId - The feature ID to check
- * @param authOptions - Optional NextAuth options (if not provided, uses default)
  * @returns Object with hasAccess boolean and plan
  * 
  * @example
- * import { authOptions } from '@/app/api/auth/[...nextauth]/route'
- * 
- * const { hasAccess, plan } = await checkFeatureAccess('exports_csv', authOptions)
+ * const { hasAccess, plan } = await checkFeatureAccess('exports_csv')
  * if (!hasAccess) {
  *   // Handle unauthorized access
  * }
  */
 export async function checkFeatureAccess(
-  featureId: FeatureId,
-  authOptions?: NextAuthOptions
+  featureId: FeatureId
 ): Promise<{
   hasAccess: boolean
   plan: PlanId
 }> {
-  const session = await getServerSession(authOptions)
+  // Get the current session (NextAuth automatically uses the configured authOptions)
+  const session = await getServerSession()
   const plan = (session?.user?.accessLevel ?? 'free') as PlanId
   
   return {

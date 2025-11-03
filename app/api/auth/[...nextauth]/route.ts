@@ -5,6 +5,10 @@ import { NextAuthOptions } from "next-auth"
 import { getUserByEmail, updateUserById, createUser, getUserByEmailWithPassword } from "@lib/kysely/repositories/user-repo"
 import { verifyPassword } from "@lib/auth/password-utils"
 
+// Force dynamic rendering to prevent build-time errors
+// This ensures secrets are only accessed at runtime, not during Docker build
+export const dynamic = 'force-dynamic'
+
 // Export auth options for use in other API routes
 export const authOptions: NextAuthOptions = {
   session: { 

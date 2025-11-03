@@ -11,34 +11,51 @@ import * as Tarn from 'tarn'
 // apps unless the client is actually used.
 // You must add dependencies: `kysely`, `tedious`, `tarn`.
 
-// Azure SQL connection settings derived from env
+// Azure SQL connection settings
 // Required: MSSQL_SERVER, MSSQL_DATABASE, MSSQL_USER, MSSQL_PASSWORD, MSSQL_ENCRYPT
 // Optional: MSSQL_POOL_MIN, MSSQL_POOL_MAX
-const server = process.env.MSSQL_SERVER
-const database = process.env.MSSQL_DATABASE
-const userName = process.env.MSSQL_USER
-const password = process.env.MSSQL_PASSWORD
-const encryptRaw = process.env.MSSQL_ENCRYPT
-
-if (!server) throw new Error('Missing required environment variable: MSSQL_SERVER')
-if (!database) throw new Error('Missing required environment variable: MSSQL_DATABASE')
-if (!userName) throw new Error('Missing required environment variable: MSSQL_USER')
-if (!password) throw new Error('Missing required environment variable: MSSQL_PASSWORD')
-if (!encryptRaw) throw new Error('Missing required environment variable: MSSQL_ENCRYPT')
-
-const encryptRawLower = encryptRaw.toLowerCase()
-if (encryptRawLower !== 'true' && encryptRawLower !== 'false') {
-  throw new Error('MSSQL_ENCRYPT must be "true" or "false"')
-}
-const encrypt = encryptRawLower === 'true'
-const poolMin = Number(process.env.MSSQL_POOL_MIN ?? '0')
-const poolMax = Number(process.env.MSSQL_POOL_MAX ?? '10')
+//
+// IMPORTANT: Lazy initialization prevents build-time errors
+// In production (Azure Container Apps), secrets are injected at runtime from Key Vault
+// During Docker build, these env vars won't exist yet, so we defer initialization
 
 // Lazy holders so module import happens only if someone uses `db`
 let kyselyInstance: Kysely<DB> | null = null
 
+/**
+ * Get configuration from environment variables at runtime
+ * This prevents errors during Docker build when secrets aren't available yet
+ */
+function getDbConfig() {
+  const server = process.env.MSSQL_SERVER
+  const database = process.env.MSSQL_DATABASE
+  const userName = process.env.MSSQL_USER
+  const password = process.env.MSSQL_PASSWORD
+  const encryptRaw = process.env.MSSQL_ENCRYPT
+
+  // Validate at runtime (not at module import time)
+  if (!server) throw new Error('Missing required environment variable: MSSQL_SERVER')
+  if (!database) throw new Error('Missing required environment variable: MSSQL_DATABASE')
+  if (!userName) throw new Error('Missing required environment variable: MSSQL_USER')
+  if (!password) throw new Error('Missing required environment variable: MSSQL_PASSWORD')
+  if (!encryptRaw) throw new Error('Missing required environment variable: MSSQL_ENCRYPT')
+
+  const encryptRawLower = encryptRaw.toLowerCase()
+  if (encryptRawLower !== 'true' && encryptRawLower !== 'false') {
+    throw new Error('MSSQL_ENCRYPT must be "true" or "false"')
+  }
+  const encrypt = encryptRawLower === 'true'
+  const poolMin = Number(process.env.MSSQL_POOL_MIN ?? '0')
+  const poolMax = Number(process.env.MSSQL_POOL_MAX ?? '10')
+
+  return { server, database, userName, password, encrypt, poolMin, poolMax }
+}
+
 export function getDb(): Kysely<DB> {
   if (kyselyInstance) return kyselyInstance
+
+  // Get configuration at runtime (lazy)
+  const { server, database, userName, password, encrypt, poolMin, poolMax } = getDbConfig()
 
   const dialect = new MssqlDialect({
     tarn: {
@@ -52,7 +69,7 @@ export function getDb(): Kysely<DB> {
       ...Tedious,
       connectionFactory: () =>
         new Tedious.Connection({
-          server: server!,
+          server: server,
           authentication: {
             type: 'default',
             options: {
@@ -81,19 +98,33 @@ export async function closeDb(): Promise<void> {
   }
 }
 
-export const db = getDb()
+/**
+ * Lazy-initialized database instance
+ * Uses Proxy to defer initialization until first property access
+ * This prevents build-time errors when secrets aren't available
+ */
+export const db = new Proxy({} as Kysely<DB>, {
+  get(_target, prop) {
+    // Lazy-load database on first access
+    return getDb()[prop as keyof Kysely<DB>]
+  }
+})
 
 // Auto-initialize tables in development if they don't exist
-if (process.env.NODE_ENV === 'development') {
-  import('../../../kysely/migrations/ensure-tables')
-    .then(({ ensureAllTables }) => {
-      ensureAllTables().catch(error => {
-        console.error('Failed to auto-initialize database tables:', error)
+// Only run at runtime, not during build
+if (typeof window === 'undefined' && process.env.NODE_ENV === 'development') {
+  // Defer this to avoid executing during build
+  Promise.resolve().then(() => {
+    import('../../../kysely/migrations/ensure-tables')
+      .then(({ ensureAllTables }) => {
+        ensureAllTables().catch(error => {
+          console.error('Failed to auto-initialize database tables:', error)
+        })
       })
-    })
-    .catch(error => {
-      console.error('Failed to load migration module:', error)
-    })
+      .catch(error => {
+        console.error('Failed to load migration module:', error)
+      })
+  })
 }
 
 

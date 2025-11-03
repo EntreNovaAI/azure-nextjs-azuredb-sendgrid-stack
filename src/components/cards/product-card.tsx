@@ -29,10 +29,10 @@ export function ProductCard({
   userAccessLevel
 }: ProductCardProps) {
   // Extract product properties for easier access
-  const { title, description, features, variant = 'default', id: productId, displayPrice } = product
+  const { title, description, features, variant = 'default', id: productId } = product
   
-  // Use provided price or fall back to displayPrice from product
-  const finalPrice = price || displayPrice || 'Free'
+  // Use provided price or default to 'Free' for free tier
+  const finalPrice = price || 'Free'
   const router = useRouter()
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)

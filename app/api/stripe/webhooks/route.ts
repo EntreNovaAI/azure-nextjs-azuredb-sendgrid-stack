@@ -7,6 +7,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { getStripeForWebhooks } from "@lib/stripe/stripe-client"
 import { handleStripeWebhookEvent } from "@lib/stripe/stripe-service"
 
+// Force dynamic rendering to prevent build-time errors
+// This ensures secrets are only accessed at runtime, not during Docker build
+export const dynamic = 'force-dynamic'
 export const runtime = "nodejs"
 
 /**

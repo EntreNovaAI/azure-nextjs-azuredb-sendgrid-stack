@@ -3,6 +3,10 @@ import { redirect } from "next/navigation"
 import { getUserByEmail, createUser } from "@lib/kysely/repositories/user-repo"
 import { ProfileClient } from "./profile-client"
 
+// Force dynamic rendering to prevent build-time errors
+// This ensures database secrets are only accessed at runtime, not during Docker build
+export const dynamic = 'force-dynamic'
+
 /**
  * Profile Page - Server Component
  * Displays user information and subscription details
