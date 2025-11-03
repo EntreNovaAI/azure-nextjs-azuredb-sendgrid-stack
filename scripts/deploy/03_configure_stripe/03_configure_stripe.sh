@@ -7,14 +7,25 @@
 #   Update .env.production or Azure Key Vault with live credentials
 #
 # Usage:
-#   bash scripts/deploy/02_stripe_production_setup.sh [--yes] [--keyvault]
+#   bash scripts/deploy/03_configure_stripe/03_configure_stripe.sh [OPTIONS]
 #
 # Options:
-#   --yes         Auto-confirm prompts (non-interactive mode)
-#   --keyvault    Store secrets directly in Azure Key Vault
+#   --yes              Auto-confirm prompts (non-interactive mode)
+#   --keyvault         Store secrets directly in Azure Key Vault
+#   --update-webhook   Update Stripe webhook endpoint with Container App URL should run this if wanting to use test stripe with live app, run after 05_deploy_container_app.sh
 #
 
 set -euo pipefail
+
+# ============================================================================
+# Change to Project Root Directory
+# ============================================================================
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Change to project root (three levels up from scripts/deploy/02_assign_roles/)
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+cd "$PROJECT_ROOT"
 
 # ============================================================================
 # Configuration
@@ -32,6 +43,7 @@ DEFAULT_PREMIUM_PRICE="29.99"
 
 AUTO_YES=false
 USE_KEYVAULT=false
+UPDATE_WEBHOOK=false
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -43,9 +55,13 @@ while [ $# -gt 0 ]; do
       USE_KEYVAULT=true
       shift
       ;;
+    --update-webhook)
+      UPDATE_WEBHOOK=true
+      shift
+      ;;
     *)
       printf "Unknown option: %s\n" "$1"
-      printf "Usage: %s [--yes] [--keyvault]\n" "$0"
+      printf "Usage: %s [--yes] [--keyvault] [--update-webhook]\n" "$0"
       exit 1
       ;;
   esac
@@ -469,6 +485,158 @@ store_in_keyvault() {
 }
 
 # ============================================================================
+# Update Stripe Webhook
+# ============================================================================
+
+update_stripe_webhook() {
+  print_header "Update Stripe Webhook"
+  
+  # Check if .env.production exists
+  if [ ! -f "$ENV_FILE" ]; then
+    print_error "$ENV_FILE not found"
+    print_info "Run scripts/deploy/01_deploy_infrastructure/01_deploy_infrastructure.sh first"
+    exit 1
+  fi
+  
+  # Get Container App URL from .env.production
+  CONTAINER_APP_URL=$(grep "^CONTAINER_APP_URL=" "$ENV_FILE" | cut -d'=' -f2)
+  
+  if [ -z "$CONTAINER_APP_URL" ]; then
+    print_error "CONTAINER_APP_URL not found in $ENV_FILE"
+    print_info "Run scripts/deploy/05_deploy_container_app/05_deploy_container_app.sh first"
+    exit 1
+  fi
+  
+  # Get Stripe secret key
+  STRIPE_SECRET_KEY=$(grep "^STRIPE_SECRET_KEY=" "$ENV_FILE" | cut -d'=' -f2)
+  
+  if [ -z "$STRIPE_SECRET_KEY" ]; then
+    print_error "STRIPE_SECRET_KEY not found in $ENV_FILE"
+    print_info "Configure Stripe first (run without --update-webhook flag)"
+    exit 1
+  fi
+  
+  # Construct webhook URL
+  WEBHOOK_URL="${CONTAINER_APP_URL}/api/stripe/webhooks"
+  
+  print_info "Container App URL: $CONTAINER_APP_URL"
+  print_info "Webhook URL: $WEBHOOK_URL"
+  printf "\n"
+  
+  # List existing webhooks
+  print_info "Fetching existing webhooks..."
+  local webhooks_response
+  webhooks_response=$(curl -s -X GET https://api.stripe.com/v1/webhook_endpoints \
+    -u "${STRIPE_SECRET_KEY}:")
+  
+  # Check if webhook already exists
+  local existing_webhook_id=""
+  if command -v jq >/dev/null 2>&1; then
+    existing_webhook_id=$(printf "%s" "$webhooks_response" | jq -r ".data[] | select(.url==\"$WEBHOOK_URL\") | .id" | head -1)
+  fi
+  
+  if [ -n "$existing_webhook_id" ] && [ "$existing_webhook_id" != "null" ]; then
+    print_warning "Webhook already exists with ID: $existing_webhook_id"
+    
+    if ! confirm "Update existing webhook?"; then
+      print_info "Keeping existing webhook"
+      return 0
+    fi
+    
+    # Update existing webhook
+    print_info "Updating webhook..."
+    local update_response
+    update_response=$(curl -s -X POST "https://api.stripe.com/v1/webhook_endpoints/${existing_webhook_id}" \
+      -u "${STRIPE_SECRET_KEY}:" \
+      -d "enabled_events[]=checkout.session.completed" \
+      -d "enabled_events[]=customer.subscription.created" \
+      -d "enabled_events[]=customer.subscription.updated" \
+      -d "enabled_events[]=customer.subscription.deleted")
+    
+    print_success "Webhook updated: $existing_webhook_id"
+  else
+    # Create new webhook
+    print_info "Creating new webhook..."
+    
+    if ! confirm "Create webhook endpoint at: $WEBHOOK_URL?"; then
+      print_info "Webhook creation cancelled"
+      exit 0
+    fi
+    
+    local create_response
+    create_response=$(curl -s -X POST https://api.stripe.com/v1/webhook_endpoints \
+      -u "${STRIPE_SECRET_KEY}:" \
+      -d "url=${WEBHOOK_URL}" \
+      -d "enabled_events[]=checkout.session.completed" \
+      -d "enabled_events[]=customer.subscription.created" \
+      -d "enabled_events[]=customer.subscription.updated" \
+      -d "enabled_events[]=customer.subscription.deleted")
+    
+    # Extract webhook ID and secret
+    local webhook_id
+    local webhook_secret
+    
+    if command -v jq >/dev/null 2>&1; then
+      webhook_id=$(printf "%s" "$create_response" | jq -r '.id')
+      webhook_secret=$(printf "%s" "$create_response" | jq -r '.secret')
+    else
+      webhook_id=$(printf "%s" "$create_response" | grep -o '"id":"we_[^"]*"' | head -1 | cut -d'"' -f4)
+      webhook_secret=$(printf "%s" "$create_response" | grep -o '"secret":"whsec_[^"]*"' | head -1 | cut -d'"' -f4)
+    fi
+    
+    if [ -z "$webhook_id" ] || [ "$webhook_id" = "null" ]; then
+      print_error "Failed to create webhook"
+      print_error "Response: $create_response"
+      exit 1
+    fi
+    
+    print_success "Webhook created: $webhook_id"
+    printf "\n"
+    
+    # Store webhook secret in .env.production
+    print_info "Storing webhook secret in $ENV_FILE..."
+    
+    local temp_file
+    temp_file=$(mktemp -t env.XXXXXX)
+    cp "$ENV_FILE" "$temp_file"
+    
+    # Update or add webhook secret
+    if grep -q "^STRIPE_WEBHOOK_SECRET=" "$temp_file"; then
+      local sed_temp
+      sed_temp=$(mktemp -t sed.XXXXXX)
+      sed "s|^STRIPE_WEBHOOK_SECRET=.*|STRIPE_WEBHOOK_SECRET=${webhook_secret}|" "$temp_file" > "$sed_temp"
+      mv "$sed_temp" "$temp_file"
+    elif grep -q "^#STRIPE_WEBHOOK_SECRET=" "$temp_file"; then
+      local sed_temp
+      sed_temp=$(mktemp -t sed.XXXXXX)
+      sed "s|^#STRIPE_WEBHOOK_SECRET=.*|STRIPE_WEBHOOK_SECRET=${webhook_secret}|" "$temp_file" > "$sed_temp"
+      mv "$sed_temp" "$temp_file"
+    else
+      printf "\n# Stripe Webhook Secret\nSTRIPE_WEBHOOK_SECRET=%s\n" "$webhook_secret" >> "$temp_file"
+    fi
+    
+    mv "$temp_file" "$ENV_FILE"
+    print_success "Webhook secret saved to $ENV_FILE"
+    
+    # Store in Key Vault if requested
+    if [ "$USE_KEYVAULT" = true ]; then
+      KEY_VAULT_NAME=$(grep "^KEY_VAULT_NAME=" "$ENV_FILE" | cut -d'=' -f2)
+      
+      if [ -n "$KEY_VAULT_NAME" ]; then
+        print_info "Storing webhook secret in Key Vault..."
+        az keyvault secret set --vault-name "$KEY_VAULT_NAME" --name "STRIPE-WEBHOOK-SECRET" --value "$webhook_secret" --output none
+        print_success "Webhook secret stored in Key Vault"
+      fi
+    fi
+  fi
+  
+  printf "\n"
+  print_success "Webhook configuration complete!"
+  print_info "Webhook URL: $WEBHOOK_URL"
+  print_warning "Remember to redeploy your Container App to use the updated webhook secret"
+}
+
+# ============================================================================
 # Next Steps Instructions
 # ============================================================================
 
@@ -479,6 +647,8 @@ show_next_steps() {
   printf "\n"
   
   print_warning "IMPORTANT: Set up production webhook"
+  printf "  Run: bash scripts/deploy/03_configure_stripe/03_configure_stripe.sh --update-webhook\n"
+  printf "  Or manually:\n"
   printf "  1. Go to: https://dashboard.stripe.com/webhooks\n"
   printf "  2. Click 'Add endpoint'\n"
   printf "  3. URL: <your-container-app-url>/api/stripe/webhooks\n"
@@ -499,7 +669,7 @@ show_next_steps() {
   printf "\n"
   
   print_info "Next: Run deployment script"
-  printf "  bash scripts/deploy/03_az_bind_secrets.sh\n"
+  printf "  bash scripts/deploy/06_bind_secrets/06_bind_secrets.sh\n"
   printf "\n"
   
   print_success "Production setup complete! 🚀"
@@ -510,6 +680,14 @@ show_next_steps() {
 # ============================================================================
 
 main() {
+  # Check if running in webhook update mode
+  if [ "$UPDATE_WEBHOOK" = true ]; then
+    print_header "Stripe Webhook Update"
+    update_stripe_webhook
+    return 0
+  fi
+  
+  # Normal production setup flow
   print_header "Stripe Production Setup"
   
   # Run setup steps

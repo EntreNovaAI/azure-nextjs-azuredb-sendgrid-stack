@@ -48,6 +48,17 @@ cleanup() {
   echo ""
   echo "🧹 Cleaning up..."
   
+  # Optional: Delete the webhook we created
+  # Uncomment the following lines if you want to auto-delete webhooks on exit
+  if [ ! -z "$STRIPE_WEBHOOK_ID" ] && [ -f ".env.local" ]; then
+    STRIPE_KEY=$(grep "^STRIPE_SECRET_KEY=" .env.local | cut -d'=' -f2)
+    if [ ! -z "$STRIPE_KEY" ]; then
+      echo "   Removing Stripe webhook..."
+      curl -s -X DELETE "https://api.stripe.com/v1/webhook_endpoints/${STRIPE_WEBHOOK_ID}" \
+        -u "${STRIPE_KEY}:" > /dev/null 2>&1 || true
+    fi
+  fi
+  
   # Stop the tunnel process if it's running
   if [ ! -z "$TUNNEL_PID" ]; then
     kill $TUNNEL_PID 2>/dev/null || true
@@ -148,6 +159,157 @@ echo "✅ Tunnel is running!"
 echo "   Public URL: $PUBLIC_URL"
 echo ""
 
+# ============================================================================
+# Update Stripe Webhook
+# ============================================================================
+
+update_stripe_webhook() {
+  echo "🔗 Setting up Stripe webhook..."
+  echo ""
+  
+  # Check if .env.local exists
+  if [ ! -f ".env.local" ]; then
+    echo "⚠️  .env.local not found"
+    echo "   Skipping Stripe webhook setup"
+    echo "   Run: bash scripts/dev/01_stripe_setup.sh first"
+    echo ""
+    return 0
+  fi
+  
+  # Get Stripe secret key from .env.local
+  STRIPE_KEY=$(grep "^STRIPE_SECRET_KEY=" .env.local | cut -d'=' -f2)
+  
+  if [ -z "$STRIPE_KEY" ]; then
+    echo "⚠️  STRIPE_SECRET_KEY not found in .env.local"
+    echo "   Skipping Stripe webhook setup"
+    echo "   Run: bash scripts/dev/01_stripe_setup.sh first"
+    echo ""
+    return 0
+  fi
+  
+  # Validate it's a test key
+  if [[ ! "$STRIPE_KEY" =~ ^sk_test_ ]]; then
+    echo "⚠️  Found production Stripe key in .env.local"
+    echo "   For safety, only test keys (sk_test_...) are auto-configured"
+    echo "   Skipping webhook setup"
+    echo ""
+    return 0
+  fi
+  
+  # Construct webhook URL
+  WEBHOOK_URL="${PUBLIC_URL}/api/stripe/webhooks"
+  
+  echo "   Webhook URL: $WEBHOOK_URL"
+  echo ""
+  
+  # Fetch existing webhooks
+  local webhooks_response
+  webhooks_response=$(curl -s -X GET https://api.stripe.com/v1/webhook_endpoints \
+    -u "${STRIPE_KEY}:")
+  
+  # Check if webhook already exists for this URL
+  local existing_webhook_id=""
+  if command -v jq >/dev/null 2>&1; then
+    existing_webhook_id=$(echo "$webhooks_response" | jq -r ".data[] | select(.url==\"$WEBHOOK_URL\") | .id" | head -1)
+  fi
+  
+  if [ -n "$existing_webhook_id" ] && [ "$existing_webhook_id" != "null" ]; then
+    # Webhook already exists
+    echo "   ℹ️  Webhook already exists (ID: $existing_webhook_id)"
+    echo "   ✅ Using existing webhook"
+    echo ""
+    
+    # Get the existing secret
+    local webhook_secret
+    if command -v jq >/dev/null 2>&1; then
+      webhook_secret=$(echo "$webhooks_response" | jq -r ".data[] | select(.id==\"$existing_webhook_id\") | .secret" | head -1)
+    fi
+    
+    # Update .env.local with the secret if we have it
+    if [ -n "$webhook_secret" ] && [ "$webhook_secret" != "null" ]; then
+      update_env_var "STRIPE_WEBHOOK_SECRET" "$webhook_secret"
+      echo "   ✅ Webhook secret updated in .env.local"
+      echo ""
+    fi
+    
+    return 0
+  fi
+  
+  # Create new webhook
+  echo "   Creating new webhook endpoint..."
+  
+  local create_response
+  create_response=$(curl -s -X POST https://api.stripe.com/v1/webhook_endpoints \
+    -u "${STRIPE_KEY}:" \
+    -d "url=${WEBHOOK_URL}" \
+    -d "enabled_events[]=checkout.session.completed" \
+    -d "enabled_events[]=customer.subscription.created" \
+    -d "enabled_events[]=customer.subscription.updated" \
+    -d "enabled_events[]=customer.subscription.deleted")
+  
+  # Extract webhook ID and secret
+  local webhook_id
+  local webhook_secret
+  
+  if command -v jq >/dev/null 2>&1; then
+    webhook_id=$(echo "$create_response" | jq -r '.id')
+    webhook_secret=$(echo "$create_response" | jq -r '.secret')
+  else
+    webhook_id=$(echo "$create_response" | grep -o '"id":"we_[^"]*"' | head -1 | cut -d'"' -f4)
+    webhook_secret=$(echo "$create_response" | grep -o '"secret":"whsec_[^"]*"' | head -1 | cut -d'"' -f4)
+  fi
+  
+  if [ -z "$webhook_id" ] || [ "$webhook_id" = "null" ]; then
+    echo "   ❌ Failed to create webhook"
+    echo "   Response: $create_response"
+    echo ""
+    echo "   You can manually set up the webhook at:"
+    echo "   https://dashboard.stripe.com/test/webhooks"
+    echo ""
+    return 0
+  fi
+  
+  echo "   ✅ Webhook created (ID: $webhook_id)"
+  echo ""
+  
+  # Update .env.local with webhook secret
+  update_env_var "STRIPE_WEBHOOK_SECRET" "$webhook_secret"
+  echo "   ✅ Webhook secret saved to .env.local"
+  echo ""
+  
+  # Store webhook ID for cleanup later
+  export STRIPE_WEBHOOK_ID="$webhook_id"
+}
+
+# Helper function to update or add environment variable
+update_env_var() {
+  local key="$1"
+  local value="$2"
+  local env_file=".env.local"
+  
+  # Create temp file
+  local temp_file
+  temp_file=$(mktemp)
+  
+  if grep -q "^${key}=" "$env_file" 2>/dev/null; then
+    # Update existing variable
+    sed "s|^${key}=.*|${key}=${value}|" "$env_file" > "$temp_file"
+    mv "$temp_file" "$env_file"
+  elif grep -q "^#${key}=" "$env_file" 2>/dev/null; then
+    # Uncomment and update
+    sed "s|^#${key}=.*|${key}=${value}|" "$env_file" > "$temp_file"
+    mv "$temp_file" "$env_file"
+  else
+    # Add new variable
+    echo "" >> "$env_file"
+    echo "# Stripe Webhook Secret (auto-generated)" >> "$env_file"
+    echo "${key}=${value}" >> "$env_file"
+  fi
+}
+
+# Run the webhook setup
+update_stripe_webhook
+
 # Update next.config.js
 echo "📝 Updating next.config.js..."
 
@@ -205,10 +367,16 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "🚀 Starting Next.js dev server..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "   Local:  http://localhost:3000"
-echo "   Public: $PUBLIC_URL"
+echo "   Local:    http://localhost:3000"
+echo "   Public:   $PUBLIC_URL"
+if [ ! -z "$STRIPE_WEBHOOK_ID" ]; then
+  echo "   Webhook:  ${PUBLIC_URL}/api/stripe/webhooks"
+fi
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "💡 Stripe webhooks are configured automatically"
+echo "   Test payments will trigger real webhook events"
 echo ""
 echo "Press Ctrl+C to stop everything"
 echo ""

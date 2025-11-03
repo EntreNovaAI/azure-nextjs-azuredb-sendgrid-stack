@@ -7,7 +7,7 @@
 #   Display in copy-paste format for .env files
 #
 # Usage:
-#   bash scripts/deploy/05_az_get_connection_strings.sh [--resource-group <rg>]
+#   bash scripts/deploy/07_get_connection_strings/07_get_connection_strings.sh [--resource-group <rg>]
 #
 
 set -euo pipefail
@@ -386,7 +386,7 @@ show_instructions() {
   
   print_info "To update secrets:"
   printf "  1. Update .env.production\n"
-  printf "  2. Run: bash scripts/deploy/03_az_bind_secrets.sh\n"
+  printf "  2. Run: bash scripts/deploy/06_bind_secrets/06_bind_secrets.sh\n"
   printf "\n"
   
   print_success "Connection strings retrieved! 🎉"

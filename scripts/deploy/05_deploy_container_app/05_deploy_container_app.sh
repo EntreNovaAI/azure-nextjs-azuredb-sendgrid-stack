@@ -34,7 +34,7 @@ set -euo pipefail
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Change to project root (two levels up from scripts/deploy/)
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$PROJECT_ROOT"
 
 # ============================================================================
@@ -100,6 +100,7 @@ print_warning() {
 }
 
 # Confirm action (skip if --yes flag is set)
+# Defaults to YES - user must explicitly type 'n' or 'no' to decline
 confirm() {
   if [ "$AUTO_YES" = true ]; then
     return 0
@@ -107,15 +108,17 @@ confirm() {
   
   local prompt="$1"
   local response
-  printf "%s (y/n): " "$prompt"
+  printf "%s [Y/n]: " "$prompt"
   read -r response
   
   case "$response" in
-    [yY]|[yY][eE][sS])
-      return 0
+    [nN]|[nN][oO])
+      # User explicitly declined
+      return 1
       ;;
     *)
-      return 1
+      # Empty or any other input = yes (default)
+      return 0
       ;;
   esac
 }
@@ -215,6 +218,20 @@ load_config() {
     exit 1
   fi
   
+  # Read Container App Environment ID (REQUIRED - from Phase 1)
+  CONTAINER_APP_ENV_ID=$(grep "^CONTAINER_APP_ENV_ID=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 || true)
+  
+  # Query Managed Identity ID dynamically from resource group
+  # This allows the script to work even if .env.production doesn't have it yet
+  print_info "Querying managed identity from resource group..."
+  MANAGED_IDENTITY_ID=$(az identity list \
+    --resource-group "$RESOURCE_GROUP" \
+    --query "[?contains(name, '${CONTAINER_APP_NAME}-identity')].id | [0]" \
+    -o tsv)
+  
+  # Read App Insights name (OPTIONAL - from Phase 1)
+  APP_INSIGHTS_NAME=$(grep "^APP_INSIGHTS_NAME=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 || true)
+  
   # Get location from resource group
   LOCATION=$(az group show --name "$RESOURCE_GROUP" --query location -o tsv)
   
@@ -225,6 +242,7 @@ load_config() {
   print_info "Resource Group: $RESOURCE_GROUP"
   print_info "Location: $LOCATION"
   print_info "Prefix: $PREFIX"
+  print_info "ACR Name: $ACR_NAME"
   print_info "Container App: $CONTAINER_APP_NAME"
   print_info "Image: $IMAGE_NAME"
 }
@@ -317,14 +335,52 @@ deploy_container_app() {
   print_info "Starting deployment (this may take 3-5 minutes)..."
   printf "\n"
   
-  # Deploy Bicep template
-  DEPLOYMENT_OUTPUT=$(az deployment group create \
-    --resource-group "$RESOURCE_GROUP" \
-    --template-file "$BICEP_TEMPLATE" \
-    --parameters prefix="$PREFIX" \
-                 location="$LOCATION" \
-                 containerImageTag="$IMAGE_TAG" \
-    --output json)
+  # Validate required parameters from Phase 1 are available
+  # These MUST match the exact resource IDs from Phase 1 deployment
+  if [ -z "$CONTAINER_APP_ENV_ID" ]; then
+    print_error "CONTAINER_APP_ENV_ID not found in .env.production"
+    print_info "This parameter is REQUIRED and must match Phase 1 deployment"
+    print_info "Run: bash scripts/deploy/01_deploy_foundation.sh first"
+    exit 1
+  fi
+  print_info "Using Container App Environment: $CONTAINER_APP_ENV_ID"
+  
+  # Validate that managed identity was found in the resource group
+  if [ -z "$MANAGED_IDENTITY_ID" ] || [ "$MANAGED_IDENTITY_ID" = "null" ]; then
+    print_error "Managed Identity not found in resource group: $RESOURCE_GROUP"
+    print_info "Expected identity name: ${CONTAINER_APP_NAME}-identity"
+    print_info "This resource should have been created in Phase 1"
+    print_info "Run: bash scripts/deploy/01_deploy_foundation.sh first"
+    exit 1
+  fi
+  print_info "Using Managed Identity: $MANAGED_IDENTITY_ID"
+  
+  # App Insights is optional - only warn if not found
+  if [ -z "$APP_INSIGHTS_NAME" ]; then
+    print_warning "APP_INSIGHTS_NAME not found in .env.production"
+    print_info "App Insights integration will be disabled"
+    print_info "To enable monitoring, run: bash scripts/deploy/01_deploy_foundation.sh"
+    APP_INSIGHTS_NAME=""  # Set to empty string for Bicep parameter
+  else
+    print_info "Using App Insights: $APP_INSIGHTS_NAME"
+  fi
+  
+  # Build parameters for Bicep deployment
+  # Pass actual resource IDs/names from .env.production to avoid naming mismatches
+  # Note: Location is derived from ACR in Bicep template to ensure consistency
+  BICEP_PARAMS=(
+    --resource-group "$RESOURCE_GROUP"
+    --template-file "$BICEP_TEMPLATE"
+    --parameters prefix="$PREFIX"
+                 containerImageTag="$IMAGE_TAG"
+                 acrName="$ACR_NAME"
+                 containerAppEnvId="$CONTAINER_APP_ENV_ID"
+                 managedIdentityId="$MANAGED_IDENTITY_ID"
+                 appInsightsName="$APP_INSIGHTS_NAME"
+  )
+  
+  # Deploy Bicep template with actual resource names
+  DEPLOYMENT_OUTPUT=$(az deployment group create "${BICEP_PARAMS[@]}" --output json)
   
   if [ $? -ne 0 ]; then
     print_error "Container App deployment failed"

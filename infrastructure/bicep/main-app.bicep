@@ -28,48 +28,61 @@
 @maxLength(15)
 param prefix string
 
-@description('Azure region (must match Phase 1 deployment)')
-param location string = resourceGroup().location
-
 @description('Container image tag')
 param containerImageTag string = 'latest'
 
 @description('Deploy Application Insights monitoring (must match Phase 1)')
 param deployMonitoring bool = true
 
+@description('ACR name (from Phase 1 - REQUIRED)')
+@minLength(5)
+@maxLength(50)
+param acrName string
+
+@description('Container App Environment resource ID (from Phase 1 - REQUIRED)')
+@minLength(1)
+param containerAppEnvId string
+
+@description('Managed Identity resource ID (from Phase 1 - REQUIRED)')
+@minLength(1)
+param managedIdentityId string
+
+@description('App Insights name (from Phase 1 - REQUIRED when deployMonitoring is true)')
+param appInsightsName string = ''
+
 // ============================================================================
 // Variables
 // ============================================================================
 // Note: These must match Phase 1 naming convention exactly
+// These parameters are REQUIRED and must be provided from Phase 1 deployment
 
 var containerAppName = '${prefix}-app'
-var containerAppEnvName = '${prefix}-env-${uniqueString(resourceGroup().id)}'
-var acrName = '${prefix}acr${uniqueString(resourceGroup().id)}'
-var appInsightsName = '${prefix}-insights-${uniqueString(resourceGroup().id)}'
+
+// Use the provided parameter values directly
+// No fallback defaults - deployment will fail with resource not found error if these are incorrect
+// The @minLength(1) decorator on acrName and containerAppEnvId enforces they must be provided
+var resolvedAcrName = acrName
+var resolvedAppInsightsName = appInsightsName
 
 // ============================================================================
 // Existing Resources (from Phase 1)
 // ============================================================================
 // Reference resources that were created in Phase 1
 
-// Reference Container Apps Environment
-resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
-  name: containerAppEnvName
-}
-
-// Reference Container Registry
+// Reference Container Registry - use its location to ensure consistency with Phase 1
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' existing = {
-  name: acrName
+  name: resolvedAcrName
 }
 
-// Reference Container App Managed Identity
-resource containerAppIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2025-01-31-preview' existing = {
-  name: '${containerAppName}-identity'
-}
+// Get location from existing ACR to ensure all resources are in the same region
+var location = containerRegistry.location
 
-// Reference Application Insights (if deployed)
-resource appInsights 'Microsoft.Insights/components@2020-02-02' existing = if (deployMonitoring) {
-  name: appInsightsName
+// Note: Container App Managed Identity is created by the container-app module
+// No need to reference it here as an existing resource
+
+// Reference Application Insights (only if name is provided and monitoring is enabled)
+resource appInsights 'Microsoft.Insights/components@2020-02-02' existing = if (deployMonitoring && !empty(resolvedAppInsightsName)) {
+  name: resolvedAppInsightsName
 }
 
 // ============================================================================
@@ -82,10 +95,12 @@ module containerApp 'modules/container-app.bicep' = {
   params: {
     location: location
     containerAppName: containerAppName
-    containerAppEnvId: containerAppsEnvironment.id
+    containerAppEnvId: containerAppEnvId  // Pass the full resource ID directly from Phase 1
+    managedIdentityId: managedIdentityId  // Pass the managed identity ID from Phase 1
     acrLoginServer: containerRegistry.properties.loginServer
     containerImageTag: containerImageTag
-    appInsightsConnectionString: deployMonitoring ? appInsights.properties.ConnectionString : ''
+    // Only pass App Insights connection string if monitoring is enabled AND App Insights name is provided
+    appInsightsConnectionString: (deployMonitoring && !empty(resolvedAppInsightsName)) ? appInsights.properties.ConnectionString : ''
   }
 }
 

@@ -48,8 +48,8 @@ detect_os
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Change to project root (two levels up from scripts/deploy/)
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# Change to project root (three levels up from scripts/deploy/02_assign_roles/)
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$PROJECT_ROOT"
 
 # ============================================================================
@@ -115,6 +115,7 @@ print_warning() {
 }
 
 # Confirm action (skip if --yes flag is set)
+# Defaults to YES - user must explicitly type 'n' or 'no' to decline
 confirm() {
   if [ "$AUTO_YES" = true ]; then
     return 0
@@ -122,15 +123,17 @@ confirm() {
   
   local prompt="$1"
   local response
-  printf "%s (y/n): " "$prompt"
+  printf "%s [Y/n]: " "$prompt"
   read -r response
   
   case "$response" in
-    [yY]|[yY][eE][sS])
-      return 0
+    [nN]|[nN][oO])
+      # User explicitly declined
+      return 1
       ;;
     *)
-      return 1
+      # Empty or any other input = yes (default)
+      return 0
       ;;
   esac
 }
@@ -241,10 +244,26 @@ load_config() {
     exit 1
   fi
   
+  # Read Resource Group
+  # Try to get from .env.production first
+  RESOURCE_GROUP=$(grep "^RESOURCE_GROUP=" "$ENV_FILE" | cut -d '=' -f2 || true)
+  
+  # Fallback: try to get from ACR if not in env file
+  if [ -z "$RESOURCE_GROUP" ]; then
+    RESOURCE_GROUP=$(az acr show --name "$ACR_NAME" --query resourceGroup -o tsv 2>/dev/null || true)
+  fi
+  
+  if [ -z "$RESOURCE_GROUP" ]; then
+    print_error "Could not determine resource group"
+    print_info "Make sure RESOURCE_GROUP is set in $ENV_FILE"
+    exit 1
+  fi
+  
   # Build full image name
   IMAGE_NAME="${ACR_LOGIN_SERVER}/${CONTAINER_APP_NAME}:${IMAGE_TAG}"
   
   print_success "Configuration loaded"
+  print_info "Resource Group: $RESOURCE_GROUP"
   print_info "ACR: $ACR_LOGIN_SERVER"
   print_info "Image: $IMAGE_NAME"
   
@@ -337,7 +356,8 @@ login_to_acr() {
   
   # Login using Azure CLI
   # This uses your current Azure CLI credentials
-  if az acr login --name "$ACR_NAME" 2>/dev/null; then
+  # Including resource group for more explicit authentication
+  if az acr login --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" 2>/dev/null; then
     print_success "Successfully logged in to ACR"
   else
     print_error "Failed to login to ACR"
@@ -409,24 +429,29 @@ update_container_app() {
   print_info "or wait until you run the bind secrets script."
   printf "\n"
   
-  if ! confirm "Update Container App now?"; then
-    print_info "Skipping Container App update"
-    print_info "The app will use the new image on next deployment"
-    return 0
-  fi
-  
-  # Get resource group
+  # Check if Container App exists (it may not exist yet in two-phase deployment)
   RESOURCE_GROUP=$(az containerapp show \
     --name "$CONTAINER_APP_NAME" \
     --query resourceGroup \
     -o tsv 2>/dev/null || true)
   
   if [ -z "$RESOURCE_GROUP" ]; then
-    print_error "Could not find Container App: $CONTAINER_APP_NAME"
-    return 1
+    print_info "Container App not deployed yet (this is normal for two-phase deployment)"
+    print_info "The app will use this image when deployed in the next step"
+    print_info "Continue with: bash scripts/deploy/05_deploy_container_app/05_deploy_container_app.sh"
+    return 0
   fi
   
-  print_info "Updating Container App..."
+  # Container App exists - offer to update it
+  print_info "Container App already exists"
+  
+  if ! confirm "Update Container App with new image now?"; then
+    print_info "Skipping Container App update"
+    print_info "The app will continue using the current image until manually updated"
+    return 0
+  fi
+  
+  print_info "Updating Container App with new image..."
   printf "\n"
   
   # Update the container app with the new image
@@ -446,7 +471,7 @@ update_container_app() {
     
     if [ -n "$APP_URL" ]; then
       print_info "App URL: https://${APP_URL}"
-      print_info "Note: App may take 1-2 minutes to start"
+      print_info "Note: App may take 1-2 minutes to restart with new image"
     fi
   else
     print_error "Failed to update Container App"
