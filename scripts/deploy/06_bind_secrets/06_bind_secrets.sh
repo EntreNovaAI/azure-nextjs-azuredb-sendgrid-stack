@@ -7,6 +7,7 @@
 #   This is the final step in the deployment workflow
 #
 # Prerequisites:
+#   0. Key vault secret officer role
 #   1. Phase 1 complete (01_deploy_infrastructure.sh)
 #   2. RBAC roles assigned (02_assign_roles.sh)
 #   3. Docker image pushed (04_build_and_push_image.sh)
@@ -22,6 +23,16 @@
 #
 
 set -euo pipefail
+
+# ============================================================================
+# Change to Project Root Directory
+# ============================================================================
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Change to project root (two levels up from scripts/deploy/)
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+cd "$PROJECT_ROOT"
 
 # ============================================================================
 # Configuration
@@ -89,6 +100,7 @@ print_warning() {
 }
 
 # Confirm action (skip if --yes flag is set)
+# Defaults to YES - user must explicitly type 'n' or 'no' to decline
 confirm() {
   if [ "$AUTO_YES" = true ]; then
     return 0
@@ -96,15 +108,17 @@ confirm() {
   
   local prompt="$1"
   local response
-  printf "%s (y/n): " "$prompt"
+  printf "%s [Y/n]: " "$prompt"
   read -r response
   
   case "$response" in
-    [yY]|[yY][eE][sS])
-      return 0
+    [nN]|[nN][oO])
+      # User explicitly declined
+      return 1
       ;;
     *)
-      return 1
+      # Empty or any other input = yes (default)
+      return 0
       ;;
   esac
 }
@@ -191,7 +205,7 @@ collect_parameters() {
   fi
   print_success "Container App exists"
   
-  if ! az keyvault show --name "$KEY_VAULT_NAME" >/dev/null 2>&1; then
+  if ! az keyvault show --name "$KEY_VAULT_NAME" --resource-group "$RESOURCE_GROUP" >/dev/null 2>&1; then
     print_error "Key Vault not found: $KEY_VAULT_NAME"
     exit 1
   fi
@@ -276,11 +290,13 @@ store_secrets_in_keyvault() {
     local key="${SECRET_KEYS[$i]}"
     local value="${SECRET_VALUES[$i]}"
     
-    # Convert key to Key Vault compatible name (replace _ with -)
+    # Convert key to Key Vault compatible name
+    # Replace underscores with hyphens and convert to lowercase
     local kv_secret_name="${key//_/-}"
+    kv_secret_name="${kv_secret_name,,}"  # Convert to lowercase
     
     # Check if secret already exists
-    if az keyvault secret show --vault-name "$KEY_VAULT_NAME" --name "$kv_secret_name" >/dev/null 2>&1; then
+    if az keyvault secret show --vault-name "$KEY_VAULT_NAME" --name "$kv_secret_name" --resource-group "$RESOURCE_GROUP" >/dev/null 2>&1; then
       if [ "$AUTO_YES" = false ]; then
         if ! confirm "Secret '$kv_secret_name' exists. Update?"; then
           print_info "Skipped: $kv_secret_name"
@@ -310,74 +326,106 @@ store_secrets_in_keyvault() {
 bind_secrets_to_container_app() {
   print_header "Bind Secrets to Container App"
   
-  print_info "Creating secret references for Container App..."
+  # Get the managed identity resource ID
+  # The identity is named after the container app with "-identity" suffix
+  local identity_name="${CONTAINER_APP_NAME}-identity"
+  print_info "Looking up managed identity: ${identity_name}..."
   
-  # Get Key Vault resource ID
-  local kv_resource_id
-  kv_resource_id=$(az keyvault show --name "$KEY_VAULT_NAME" --query id -o tsv)
-  
-  # Build secrets configuration for Container App
-  local secrets_json="["
-  local first=true
-  
-  for i in "${!SECRET_KEYS[@]}"; do
-    local key="${SECRET_KEYS[$i]}"
-    local kv_secret_name="${key//_/-}"
-    
-    if [ "$first" = true ]; then
-      first=false
-    else
-      secrets_json+=","
-    fi
-    
-    # Create Key Vault reference
-    secrets_json+="{\"name\":\"${kv_secret_name}\",\"keyVaultUrl\":\"https://${KEY_VAULT_NAME}.vault.azure.net/secrets/${kv_secret_name}\"}"
-  done
-  
-  secrets_json+="]"
-  
-  # Update Container App secrets
-  print_info "Updating Container App secrets..."
-  
-  # Create temp file for secrets
-  local secrets_file
-  secrets_file=$(mktemp -t secrets.XXXXXX)
-  printf "%s" "$secrets_json" > "$secrets_file"
-  
-  if az containerapp update \
-    --name "$CONTAINER_APP_NAME" \
+  local identity_resource_id
+  identity_resource_id=$(az identity show \
+    --name "$identity_name" \
     --resource-group "$RESOURCE_GROUP" \
-    --set-env-vars-from-secrets "@$secrets_file" \
-    --output none 2>/dev/null; then
-    print_success "Container App secrets updated"
-  else
-    print_error "Failed to update Container App secrets"
-    rm -f "$secrets_file"
+    --query id \
+    -o tsv 2>/dev/null)
+  
+  if [ -z "$identity_resource_id" ]; then
+    print_error "Managed identity not found: ${identity_name}"
+    print_error "Expected identity name: ${identity_name}"
     exit 1
   fi
   
-  rm -f "$secrets_file"
+  print_success "Found managed identity"
+  print_info "  Identity ID: ${identity_resource_id}"
+  printf "\n"
   
-  # Build environment variables configuration
+  print_info "Adding Key Vault secret references to Container App..."
+  
+  # Step 1: Add each secret as a Key Vault reference to Container App
+  # This creates secret references that the Container App can use
+  local added_count=0
+  
+  for i in "${!SECRET_KEYS[@]}"; do
+    local key="${SECRET_KEYS[$i]}"
+    # Convert to lowercase and replace underscores with hyphens
+    # Azure Container App secret names must be lowercase alphanumeric with hyphens
+    local kv_secret_name="${key//_/-}"
+    kv_secret_name="${kv_secret_name,,}"  # Convert to lowercase
+    
+    # Add secret reference to Container App
+    # The secret is stored as Key Vault reference, not the actual value
+    print_info "Adding secret: ${kv_secret_name} (from ${key})..."
+    
+    # Build the Key Vault URL
+    local kv_url="https://${KEY_VAULT_NAME}.vault.azure.net/secrets/${kv_secret_name}"
+    print_info "  Key Vault URL: ${kv_url}"
+    
+    # Capture full output for debugging (both stdout and stderr)
+    local error_output
+    set +e  # Temporarily disable exit on error
+    error_output=$(az containerapp secret set \
+      --name "$CONTAINER_APP_NAME" \
+      --resource-group "$RESOURCE_GROUP" \
+      --secrets "${kv_secret_name}=keyvaultref:${kv_url},identityref:${identity_resource_id}" \
+      2>&1)
+    
+    local exit_code=$?
+    
+    print_info "  Exit code: ${exit_code}"
+    
+    if [ $exit_code -eq 0 ]; then
+      added_count=$((added_count + 1))
+      print_success "  ✓ ${kv_secret_name} added successfully"
+    else
+      print_warning "Failed to add secret reference: ${kv_secret_name}"
+      if [ -n "$error_output" ]; then
+        print_error "  Error details: ${error_output}"
+      else
+        print_error "  No error message returned (command may have timed out or failed silently)"
+      fi
+    fi
+    printf "\n"
+    
+    set -e  # Re-enable exit on error after handling the result
+  done
+  
+  print_success "Added ${added_count} secret references to Container App"
+  
+  # Step 2: Build environment variables configuration
+  # Now we can reference the secrets we just added
   print_info "Setting environment variables..."
   
   local env_vars=""
   
-  # Add secret references
+  # Add secret references as environment variables
+  # Format: KEY=secretref:secret-name (where secret-name is lowercase)
   for i in "${!SECRET_KEYS[@]}"; do
     local key="${SECRET_KEYS[$i]}"
+    # Convert to lowercase and replace underscores with hyphens
     local kv_secret_name="${key//_/-}"
+    kv_secret_name="${kv_secret_name,,}"  # Convert to lowercase
     env_vars+=" ${key}=secretref:${kv_secret_name}"
   done
   
   # Add public environment variables
+  # These are not secrets, just regular env vars
   for i in "${!PUBLIC_KEYS[@]}"; do
     local key="${PUBLIC_KEYS[$i]}"
     local value="${PUBLIC_VALUES[$i]}"
     env_vars+=" ${key}=${value}"
   done
   
-  # Update Container App environment variables
+  # Step 3: Update Container App with all environment variables
+  # This sets both secret references and public env vars
   if az containerapp update \
     --name "$CONTAINER_APP_NAME" \
     --resource-group "$RESOURCE_GROUP" \
@@ -425,16 +473,16 @@ show_post_binding_instructions() {
   
   printf "📝 Secrets have been bound to your Container App\n\n"
   
-  print_info "To deploy your application:"
-  printf "  1. Build Docker image:\n"
-  printf "     docker build -t <acr-name>.azurecr.io/%s:latest -f docker/Dockerfile .\n" "$CONTAINER_APP_NAME"
-  printf "\n"
-  printf "  2. Push to Azure Container Registry:\n"
-  printf "     az acr login --name <acr-name>\n"
-  printf "     docker push <acr-name>.azurecr.io/%s:latest\n" "$CONTAINER_APP_NAME"
-  printf "\n"
-  printf "  3. Container App will automatically deploy the new image\n"
-  printf "\n"
+  # print_info "To deploy your application:"
+  # printf "  1. Build Docker image:\n"
+  # printf "     docker build -t <acr-name>.azurecr.io/%s:latest -f docker/Dockerfile .\n" "$CONTAINER_APP_NAME"
+  # printf "\n"
+  # printf "  2. Push to Azure Container Registry:\n"
+  # printf "     az acr login --name <acr-name>\n"
+  # printf "     docker push <acr-name>.azurecr.io/%s:latest\n" "$CONTAINER_APP_NAME"
+  # printf "\n"
+  # printf "  3. Container App will automatically deploy the new image\n"
+  # printf "\n"
   
   print_info "To verify secrets are loaded:"
   printf "  • Check Container App logs in Azure Portal\n"
@@ -456,7 +504,7 @@ main() {
   check_prerequisites
   collect_parameters
   parse_env_file
-  store_secrets_in_keyvault
+  # store_secrets_in_keyvault
   bind_secrets_to_container_app
   verify_configuration
   show_post_binding_instructions

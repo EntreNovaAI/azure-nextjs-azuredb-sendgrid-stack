@@ -27,6 +27,10 @@
 
 set -euo pipefail
 
+# Prevent Git Bash from converting Azure resource IDs (which start with /) to Windows paths
+# This is critical for Azure CLI commands on Windows
+export MSYS_NO_PATHCONV=1
+
 # ============================================================================
 # Change to Project Root Directory
 # ============================================================================
@@ -368,6 +372,16 @@ deploy_container_app() {
   # Build parameters for Bicep deployment
   # Pass actual resource IDs/names from .env.production to avoid naming mismatches
   # Note: Location is derived from ACR in Bicep template to ensure consistency
+  
+  print_info "Bicep deployment parameters:"
+  print_info "  - prefix: $PREFIX"
+  print_info "  - containerImageTag: $IMAGE_TAG"
+  print_info "  - acrName: $ACR_NAME"
+  print_info "  - containerAppEnvId: $CONTAINER_APP_ENV_ID"
+  print_info "  - managedIdentityId: $MANAGED_IDENTITY_ID"
+  print_info "  - appInsightsName: ${APP_INSIGHTS_NAME:-<not set>}"
+  printf "\n"
+  
   BICEP_PARAMS=(
     --resource-group "$RESOURCE_GROUP"
     --template-file "$BICEP_TEMPLATE"
@@ -380,20 +394,27 @@ deploy_container_app() {
   )
   
   # Deploy Bicep template with actual resource names
-  DEPLOYMENT_OUTPUT=$(az deployment group create "${BICEP_PARAMS[@]}" --output json)
+  # Note: Error output is shown automatically by az CLI
+  print_info "Running Bicep deployment..."
+  print_info "Template: $BICEP_TEMPLATE"
+  printf "\n"
   
-  if [ $? -ne 0 ]; then
+  if ! DEPLOYMENT_OUTPUT=$(az deployment group create "${BICEP_PARAMS[@]}" --output json 2>&1); then
     print_error "Container App deployment failed"
+    printf "\n"
+    print_error "Deployment output:"
+    echo "$DEPLOYMENT_OUTPUT"
     printf "\n"
     print_info "Common issues:"
     print_info "  1. Docker image doesn't exist in ACR"
     print_info "  2. Managed identity doesn't have AcrPull permission"
-    print_info "  3. Health check endpoint (/api/health) not responding"
+    print_info "  3. Parameter mismatch with Phase 1 resources"
+    print_info "  4. Resource naming conflicts"
     printf "\n"
     print_info "To fix:"
     print_info "  1. Verify image: az acr repository show-tags --name $ACR_NAME --repository $CONTAINER_APP_NAME"
     print_info "  2. Assign roles: bash scripts/deploy/02_assign_roles.sh"
-    print_info "  3. Check app logs in Azure Portal"
+    print_info "  3. Check deployment details in Azure Portal"
     exit 1
   fi
   
@@ -407,22 +428,41 @@ deploy_container_app() {
 extract_outputs() {
   print_header "Extracting Container App Information"
   
-  # Parse outputs with jq if available, otherwise use az query
+  # Try to parse outputs with jq if available, otherwise query directly
   if command -v jq >/dev/null 2>&1; then
-    CONTAINER_APP_FQDN=$(printf "%s" "$DEPLOYMENT_OUTPUT" | jq -r '.properties.outputs.containerAppFqdn.value')
-    CONTAINER_APP_URL=$(printf "%s" "$DEPLOYMENT_OUTPUT" | jq -r '.properties.outputs.containerAppUrl.value')
+    # Check if DEPLOYMENT_OUTPUT is valid JSON before parsing
+    if printf "%s" "$DEPLOYMENT_OUTPUT" | jq empty 2>/dev/null; then
+      CONTAINER_APP_FQDN=$(printf "%s" "$DEPLOYMENT_OUTPUT" | jq -r '.properties.outputs.containerAppFqdn.value' 2>/dev/null || echo "")
+      CONTAINER_APP_URL=$(printf "%s" "$DEPLOYMENT_OUTPUT" | jq -r '.properties.outputs.containerAppUrl.value' 2>/dev/null || echo "")
+    else
+      print_warning "Deployment output is not valid JSON, querying Container App directly..."
+      CONTAINER_APP_FQDN=""
+      CONTAINER_APP_URL=""
+    fi
   else
-    # Fallback: query the Container App directly
-    print_warning "Using fallback output extraction (install jq for better results)"
+    print_warning "jq not installed, querying Container App directly..."
+    CONTAINER_APP_FQDN=""
+    CONTAINER_APP_URL=""
+  fi
+  
+  # Fallback: query the Container App directly if parsing failed
+  if [ -z "$CONTAINER_APP_FQDN" ] || [ "$CONTAINER_APP_FQDN" = "null" ]; then
+    print_info "Querying Container App for FQDN..."
     CONTAINER_APP_FQDN=$(az containerapp show \
       --name "$CONTAINER_APP_NAME" \
       --resource-group "$RESOURCE_GROUP" \
-      --query "properties.configuration.ingress.fqdn" -o tsv)
-    CONTAINER_APP_URL="https://${CONTAINER_APP_FQDN}"
+      --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || echo "")
+    
+    if [ -n "$CONTAINER_APP_FQDN" ] && [ "$CONTAINER_APP_FQDN" != "null" ]; then
+      CONTAINER_APP_URL="https://${CONTAINER_APP_FQDN}"
+    fi
   fi
   
-  if [ -z "$CONTAINER_APP_FQDN" ]; then
+  # Final validation
+  if [ -z "$CONTAINER_APP_FQDN" ] || [ "$CONTAINER_APP_FQDN" = "null" ]; then
     print_error "Could not extract Container App FQDN"
+    print_info "The deployment may have succeeded but the Container App is not ready yet"
+    print_info "Check Azure Portal or run: az containerapp show --name $CONTAINER_APP_NAME --resource-group $RESOURCE_GROUP"
     exit 1
   fi
   
