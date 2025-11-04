@@ -93,6 +93,24 @@ main() {
   check_install_git
   check_install_stripe
   
+  # Set up environment file
+  print_header "Setting Up Environment Configuration"
+  
+  # Check if .env.example exists and clone it to .env.local
+  if [ -f ".env.example" ]; then
+    if [ -f ".env.local" ]; then
+      print_info ".env.local already exists, skipping copy"
+    else
+      print_info "Copying .env.example to .env.local"
+      cp .env.example .env.local
+      print_success "Created .env.local from .env.example"
+      print_info "Please update .env.local with your actual configuration values"
+    fi
+  else
+    print_warning ".env.example not found, skipping environment file creation"
+    print_info "You may need to manually create .env.local with required environment variables"
+  fi
+  
   # Success summary
   print_header "Setup Complete!"
   
@@ -100,7 +118,7 @@ main() {
   printf "\n"
   print_info "Next steps:"
   printf "  1. Install project dependencies: pnpm install\n"
-  printf "  2. Configure environment: Copy .env.example to .env.local\n"
+  printf "  2. Configure environment: Update .env.local with your credentials\n"
   printf "  3. Set up database and run migrations\n"
   printf "  4. Start development server: pnpm dev\n"
   printf "\n"
