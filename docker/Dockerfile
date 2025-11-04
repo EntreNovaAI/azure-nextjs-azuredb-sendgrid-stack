@@ -42,6 +42,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Set production environment for optimal build
 ENV NODE_ENV=production
 
+# Copy .env.production.docker file and rename to .env.production for Next.js
+# Next.js only reads files named .env.production during build
+# The build script creates .env.production.docker with all NEXT_PUBLIC_* variables
+COPY .env.production.docker .env.production
+
 # Build the Next.js application
 # This creates the .next/standalone folder with minimal dependencies
 RUN \

@@ -60,6 +60,10 @@ ENV_FILE=".env.production"
 DOCKERFILE="docker/Dockerfile"
 DEFAULT_TAG="latest"
 
+# Global associative array to store NEXT_PUBLIC_* variables
+# Must be declared at script level to be accessible across functions
+declare -A NEXT_PUBLIC_VARS
+
 # ============================================================================
 # Parse Arguments
 # ============================================================================
@@ -284,6 +288,48 @@ load_config() {
   else
     print_success "Stripe configuration detected in $ENV_FILE"
   fi
+  
+  # Load ALL NEXT_PUBLIC_* variables for build-time injection
+  # These variables need to be available during Docker build
+  # because Next.js bakes them into the JavaScript bundle
+  # The NEXT_PUBLIC_VARS associative array is declared globally at the top
+  
+  # Read all NEXT_PUBLIC_* variables from .env.production
+  while IFS='=' read -r key value; do
+    # Skip empty lines, comments, and non-NEXT_PUBLIC vars
+    if [[ -z "$key" ]] || [[ "$key" =~ ^[[:space:]]*# ]] || [[ ! "$key" =~ ^NEXT_PUBLIC_ ]]; then
+      continue
+    fi
+    
+    # Trim whitespace from key
+    key=$(echo "$key" | xargs)
+    
+    # Store in associative array
+    if [[ -n "$key" ]] && [[ -n "$value" ]]; then
+      NEXT_PUBLIC_VARS["$key"]="$value"
+    fi
+  done < "$ENV_FILE"
+  
+  # Special handling: If NEXT_PUBLIC_APP_URL is not set, try CONTAINER_APP_URL
+  # Use safer check that works with set -u (unbound variable protection)
+  if [[ -z "${NEXT_PUBLIC_VARS[NEXT_PUBLIC_APP_URL]:-}" ]]; then
+    CONTAINER_APP_URL=$(grep "^CONTAINER_APP_URL=" "$ENV_FILE" | cut -d '=' -f2 || true)
+    if [[ -n "$CONTAINER_APP_URL" ]]; then
+      NEXT_PUBLIC_VARS["NEXT_PUBLIC_APP_URL"]="$CONTAINER_APP_URL"
+    fi
+  fi
+  
+  # Display what we found
+  if [ ${#NEXT_PUBLIC_VARS[@]} -gt 0 ]; then
+    printf "\n"
+    print_info "Found ${#NEXT_PUBLIC_VARS[@]} NEXT_PUBLIC_* variables for build-time injection:"
+    for key in "${!NEXT_PUBLIC_VARS[@]}"; do
+      # Show key but not the full value for security
+      print_info "  • $key"
+    done
+  else
+    print_warning "No NEXT_PUBLIC_* variables found in $ENV_FILE"
+  fi
 }
 
 # ============================================================================
@@ -306,6 +352,40 @@ build_image() {
     exit 0
   fi
   
+  # Create temporary .env.production.docker file for build
+  # This file contains only NEXT_PUBLIC_* variables needed at build time
+  # Next.js will automatically read this during the build process
+  local docker_env_file=".env.production.docker"
+  
+  # Remove old file if it exists
+  rm -f "$docker_env_file"
+  
+  # Write all NEXT_PUBLIC_* variables to the docker env file
+  if [ ${#NEXT_PUBLIC_VARS[@]} -gt 0 ]; then
+    print_info "Creating temporary build environment file..."
+    
+    for key in "${!NEXT_PUBLIC_VARS[@]}"; do
+      value="${NEXT_PUBLIC_VARS[$key]}"
+      if [[ -n "$value" ]]; then
+        echo "${key}=${value}" >> "$docker_env_file"
+      fi
+    done
+    
+    print_info "✓ ${#NEXT_PUBLIC_VARS[@]} NEXT_PUBLIC_* variables prepared for build"
+    
+    # Specific warnings for critical variables
+    # Use :- to provide empty default if key doesn't exist (works with set -u)
+    if [[ -z "${NEXT_PUBLIC_VARS[NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY]:-}" ]]; then
+      print_warning "⚠️  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY not found - Stripe checkout may not work"
+    fi
+  else
+    print_warning "⚠️  No NEXT_PUBLIC_* variables found - client-side features may not work"
+    # Create empty file so Docker COPY doesn't fail
+    touch "$docker_env_file"
+  fi
+  
+  printf "\n"
+  
   # Build the image
   # Note: Using --platform linux/amd64 for compatibility with Azure Container Apps
   # This ensures the image works on Azure regardless of host architecture (Intel/ARM)
@@ -323,6 +403,7 @@ build_image() {
     fi
   fi
   
+  # Build the Docker image
   if docker build \
     --platform linux/amd64 \
     -t "$IMAGE_NAME" \
@@ -337,8 +418,15 @@ build_image() {
     print_info "  - Check Dockerfile syntax"
     print_info "  - Ensure all source files exist"
     print_info "  - Verify Docker has enough memory (Settings > Resources)"
+    
+    # Clean up docker env file before exiting
+    rm -f "$docker_env_file"
     exit 1
   fi
+  
+  # Clean up temporary docker env file
+  print_info "Cleaning up temporary build files..."
+  rm -f "$docker_env_file"
   
   # Show image details
   print_info "Image details:"
@@ -522,18 +610,30 @@ show_summary() {
   printf "  Full name:    %s\n" "$IMAGE_NAME"
   printf "\n"
   
+  # Show NEXT_PUBLIC_* variables that were baked into the build
+  if [ ${#NEXT_PUBLIC_VARS[@]} -gt 0 ]; then
+    printf "🔧 Build-time Variables (baked into JavaScript bundle):\n\n"
+    for key in "${!NEXT_PUBLIC_VARS[@]}"; do
+      printf "  ✓ %s\n" "$key"
+    done
+    printf "\n"
+  fi
+  
   printf "📝 Next Steps:\n\n"
   printf "  1. Bind secrets to Container App:\n"
-  printf "     bash scripts/deploy/05_bind_secrets.sh\n\n"
-  printf "  2. Validate deployment:\n"
-  printf "     bash scripts/deploy/00_validate_prerequisites.sh\n\n"
-  printf "  3. Test your application:\n"
+  printf "     bash scripts/deploy/06_bind_secrets/06_bind_secrets.sh\n\n"
+  printf "  2. Test your application:\n"
   printf "     Visit: https://%s\n" "$(grep '^CONTAINER_APP_FQDN=' "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 || echo '<your-app-url>')"
   printf "\n"
-  printf "💡 If you need to update Stripe config or other env vars:\n"
+  printf "💡 Important Notes:\n"
+  printf "   • NEXT_PUBLIC_* variables are baked into the build at build time\n"
+  printf "   • To update NEXT_PUBLIC_* variables, you MUST rebuild the image\n"
+  printf "   • Regular secrets (STRIPE_SECRET_KEY, etc.) are bound at runtime\n"
+  printf "\n"
+  printf "🔄 To update environment variables:\n"
   printf "   1. Update %s\n" "$ENV_FILE"
-  printf "   2. Rebuild image: bash scripts/deploy/04_build_and_push_image.sh\n"
-  printf "   3. Rebind secrets: bash scripts/deploy/05_bind_secrets.sh\n"
+  printf "   2. If changing NEXT_PUBLIC_*: bash scripts/deploy/04_build_and_push_image/04_build_and_push_image.sh\n"
+  printf "   3. If changing secrets only: bash scripts/deploy/06_bind_secrets/06_bind_secrets.sh\n"
   printf "\n"
   
   print_success "Build and push complete! 🚀"

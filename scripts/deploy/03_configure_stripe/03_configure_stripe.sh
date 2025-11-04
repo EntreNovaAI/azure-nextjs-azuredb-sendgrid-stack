@@ -471,17 +471,20 @@ store_in_keyvault() {
   print_info "Storing secrets in Key Vault..."
   
   # Store secrets (suppress output for security)
+  # Note: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is NOT stored in Key Vault
+  # because it's a public value needed at Docker build time, not runtime
   az keyvault secret set --vault-name "$KEY_VAULT_NAME" --name "STRIPE-SECRET-KEY" --value "$STRIPE_SECRET_KEY" --output none
-  az keyvault secret set --vault-name "$KEY_VAULT_NAME" --name "NEXT-PUBLIC-STRIPE-PUBLISHABLE-KEY" --value "$STRIPE_PUBLISHABLE_KEY" --output none
   az keyvault secret set --vault-name "$KEY_VAULT_NAME" --name "STRIPE-SUBSCRIPTION-ID-BASIC" --value "$BASIC_PRODUCT_ID" --output none
   az keyvault secret set --vault-name "$KEY_VAULT_NAME" --name "STRIPE-SUBSCRIPTION-ID-PREMIUM" --value "$PREMIUM_PRODUCT_ID" --output none
   
   print_success "Secrets stored in Key Vault"
   print_info "Secret names (dashes replace underscores for Key Vault compatibility):"
   print_info "  - STRIPE-SECRET-KEY"
-  print_info "  - NEXT-PUBLIC-STRIPE-PUBLISHABLE-KEY"
   print_info "  - STRIPE-SUBSCRIPTION-ID-BASIC"
   print_info "  - STRIPE-SUBSCRIPTION-ID-PREMIUM"
+  printf "\n"
+  print_info "Note: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is stored in .env.production"
+  print_info "      (not in Key Vault) because it's needed at Docker build time"
 }
 
 # ============================================================================
