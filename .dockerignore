@@ -35,12 +35,14 @@ build
 dist
 
 # Development and test environment files
-# Note: .env.production is NOT ignored as we need it for the build
+# Note: .env.production.docker is NOT ignored - it's created by the build script
+# and contains NEXT_PUBLIC_* variables needed at build time
 .env*.local
 .env.development
 .env.test
 .env.production
 .env
+!.env.production.docker
 
 # IDE
 .vscode
