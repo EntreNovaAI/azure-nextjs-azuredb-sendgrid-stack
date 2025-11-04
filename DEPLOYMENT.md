@@ -20,7 +20,7 @@ bash scripts/dev/dev_with_tunnel.sh
 # 1. Validate prerequisites
 bash scripts/deploy/04_az_validate_setup.sh
 
-# 2. Deploy Azure infrastructure
+# 2. Deploy Azure infrastructure (includes database migration)
 bash scripts/deploy/01_az_deploy_infra.sh
 
 # 3. Set up Stripe production
@@ -231,7 +231,7 @@ This checks:
 
 **Fix any errors before proceeding!**
 
-#### 2.2 Deploy Azure Infrastructure
+#### 2.2 Deploy Azure Infrastructure (Includes Database Setup)
 
 ```bash
 # Login to Azure (if not already)
@@ -250,6 +250,7 @@ bash scripts/deploy/01_az_deploy_infra.sh
 
 **What it deploys:**
 - ✅ Azure SQL Database (Basic tier)
+- ✅ **Database tables created automatically** (User, Account, Session, etc.)
 - ✅ Container Registry
 - ✅ Container Apps (Environment + App)
 - ✅ Key Vault
@@ -259,9 +260,15 @@ bash scripts/deploy/01_az_deploy_infra.sh
 **Outputs:**
 - `.env.production` file with all connection strings
 - Resource names and URLs
+- Database migration status
 - Next steps instructions
 
 **Duration:** 5-10 minutes
+
+**Note:** Database migrations run automatically at the end of infrastructure deployment. If migrations fail (e.g., due to missing Node.js/pnpm), you can run them manually later:
+```bash
+pnpm dlx tsx kysely/migration-script.ts
+```
 
 #### 2.3 Set Up Stripe Production
 
@@ -609,6 +616,7 @@ az role assignment list \
 
 ### Application
 
+- [ ] Database tables created (automatic during infrastructure deployment)
 - [ ] Stripe production configured (`02_stripe_production_setup.sh`)
 - [ ] Production webhook created in Stripe Dashboard
 - [ ] Docker image built and pushed

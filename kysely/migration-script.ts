@@ -18,9 +18,21 @@ import { Kysely, Migrator, FileMigrationProvider, MssqlDialect } from 'kysely'
 import * as Tedious from 'tedious'
 import * as Tarn from 'tarn'
 
-// Load .env files (same as Next.js does automatically)
-config({ path: '.env.local' })
-config({ path: '.env' })
+// Load environment files based on NODE_ENV
+// Supports multiple scenarios:
+// - Development: .env.local and .env (for local DB)
+// - Production: .env.production (for Azure DB)
+// - Command line: .env.production, then fallback to .env
+if (process.env.NODE_ENV === 'development') {
+  // Development mode: use local env files
+  config({ path: '.env.local' })
+  config({ path: '.env' })
+} else {
+  // Production/deployment mode: use production env file
+  config({ path: '.env.production' })
+  // Fallback to .env if .env.production doesn't exist (manual command line usage)
+  config({ path: '.env' })
+}
 
 // Minimal DB type for migrations on purpose (Kysely<any>)
 // Migrations must not depend on app runtime types. See docs.

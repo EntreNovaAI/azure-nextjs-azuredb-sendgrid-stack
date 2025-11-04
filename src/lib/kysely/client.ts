@@ -99,14 +99,26 @@ export async function closeDb(): Promise<void> {
 }
 
 /**
- * Lazy-initialized database instance
- * Uses Proxy to defer initialization until first property access
- * This prevents build-time errors when secrets aren't available
+ * Lazy-initialized database instance using Proxy pattern
+ * 
+ * Why we need the Proxy:
+ * - Next.js build process executes server code to collect page data
+ * - Without Proxy, getDb() would run during build when env vars don't exist
+ * - The Proxy defers initialization until first actual use at runtime
+ * - This is critical for Docker builds where secrets are injected later
  */
 export const db = new Proxy({} as Kysely<DB>, {
   get(_target, prop) {
-    // Lazy-load database on first access
-    return getDb()[prop as keyof Kysely<DB>]
+    // Lazy-load database on first property access
+    const instance = getDb()
+    const value = instance[prop as keyof Kysely<DB>]
+    
+    // Bind functions to preserve 'this' context and access to private members
+    if (typeof value === 'function') {
+      return value.bind(instance)
+    }
+    
+    return value
   }
 })
 

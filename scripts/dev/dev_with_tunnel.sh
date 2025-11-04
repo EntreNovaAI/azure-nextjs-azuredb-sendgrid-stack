@@ -11,14 +11,42 @@
 # 
 # When you press Ctrl+C, everything stops and cleans up automatically.
 #
+# Usage:
+#   bash scripts/dev/dev_with_tunnel.sh         # Run without Stripe webhook setup
+#   bash scripts/dev/dev_with_tunnel.sh -stripe # Run with Stripe webhook setup
+#
 
 # Exit if any command fails
 set -e
 
+# Parse command-line flags
+ENABLE_STRIPE=false
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -stripe|--stripe)
+      ENABLE_STRIPE=true
+      shift
+      ;;
+    -h|--help)
+      echo "Usage: bash scripts/dev/dev_with_tunnel.sh [OPTIONS]"
+      echo ""
+      echo "Options:"
+      echo "  -stripe, --stripe    Enable automatic Stripe webhook configuration"
+      echo "  -h, --help          Show this help message"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Use -h or --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
 # Change to project root directory
 # This ensures we can find next.config.js
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT"
 
 echo ""
@@ -307,8 +335,10 @@ update_env_var() {
   fi
 }
 
-# Run the webhook setup
-update_stripe_webhook
+# Run the webhook setup only if -stripe flag was provided
+if [ "$ENABLE_STRIPE" = true ]; then
+  update_stripe_webhook
+fi
 
 # Update next.config.js
 echo "📝 Updating next.config.js..."
@@ -375,8 +405,13 @@ fi
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "💡 Stripe webhooks are configured automatically"
-echo "   Test payments will trigger real webhook events"
+if [ "$ENABLE_STRIPE" = true ]; then
+  echo "💡 Stripe webhooks are configured automatically"
+  echo "   Test payments will trigger real webhook events"
+else
+  echo "💡 Stripe webhooks not configured"
+  echo "   To enable: bash scripts/dev/dev_with_tunnel.sh -stripe"
+fi
 echo ""
 echo "Press Ctrl+C to stop everything"
 echo ""

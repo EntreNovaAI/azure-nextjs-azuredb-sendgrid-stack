@@ -30,7 +30,7 @@ show_post_deployment_summary() {
   
   printf "📦 Foundation Resources Deployed:\n\n"
   printf "  SQL Server:      %s\n" "$SQL_SERVER_FQDN"
-  printf "  Database:        %s\n" "$SQL_DATABASE_NAME"
+  printf "  Database:        %s (with tables created)\n" "$SQL_DATABASE_NAME"
   printf "  ACR:             %s\n" "$ACR_LOGIN_SERVER"
   printf "  Key Vault:       %s\n" "$KEY_VAULT_NAME"
   printf "  Container Env:   Ready (Container App will be deployed in Phase 2)\n"
