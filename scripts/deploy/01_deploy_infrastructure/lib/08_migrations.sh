@@ -65,6 +65,12 @@ run_database_migrations() {
   
   print_info "Loading database credentials from .env.production..."
   
+  # CRITICAL: Set NODE_ENV to production BEFORE loading .env.production
+  # This ensures the migration scripts (TypeScript) will use .env.production
+  # The migration scripts check NODE_ENV to decide which env file to load
+  export NODE_ENV=production
+  print_info "Set NODE_ENV=production for migration scripts"
+  
   # Export variables for the migration script to use
   # We need: MSSQL_SERVER, MSSQL_DATABASE, MSSQL_USER, MSSQL_PASSWORD, MSSQL_ENCRYPT
   set -a  # Auto-export all variables

@@ -36,7 +36,10 @@
 #   - 05_outputs.sh        : Extract deployment outputs
 #   - 06_env_generation.sh : Generate .env.production file
 #   - 07_summary.sh        : Post-deployment summary
-#   - 08_migrations.sh     : Database migrations (create tables)
+#
+# Database Migrations (08_migrations.sh):
+#   Migrations are now run separately via 02_run_migrations.sh
+#   This allows users to whitelist their IP in Azure Portal first
 #
 
 set -euo pipefail
@@ -124,7 +127,6 @@ source "$LIB_DIR/03_validation.sh"
 source "$LIB_DIR/04_deployment.sh"
 source "$LIB_DIR/05_outputs.sh"
 source "$LIB_DIR/06_env_generation.sh"
-source "$LIB_DIR/08_migrations.sh"
 source "$LIB_DIR/07_summary.sh"
 
 # ============================================================================
@@ -144,7 +146,6 @@ main() {
   deploy_infrastructure
   extract_outputs
   generate_env_file
-  run_database_migrations  # Create database tables after infrastructure is ready
   show_post_deployment_summary
 }
 

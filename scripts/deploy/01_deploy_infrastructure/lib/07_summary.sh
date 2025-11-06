@@ -30,7 +30,7 @@ show_post_deployment_summary() {
   
   printf "📦 Foundation Resources Deployed:\n\n"
   printf "  SQL Server:      %s\n" "$SQL_SERVER_FQDN"
-  printf "  Database:        %s (with tables created)\n" "$SQL_DATABASE_NAME"
+  printf "  Database:        %s (tables will be created in next step)\n" "$SQL_DATABASE_NAME"
   printf "  ACR:             %s\n" "$ACR_LOGIN_SERVER"
   printf "  Key Vault:       %s\n" "$KEY_VAULT_NAME"
   printf "  Container Env:   Ready (Container App will be deployed in Phase 2)\n"
@@ -46,17 +46,25 @@ show_post_deployment_summary() {
   printf "  NEXT: Prepare for Phase 2\n"
   printf "  -------------------------\n"
   printf "  1. Review %s\n" "$ENV_FILE"
-  printf "  2. Assign RBAC roles (REQUIRED for Container App to pull images):\n"
+  printf "  2. 🔒 WHITELIST YOUR IP ADDRESS in Azure SQL Server (REQUIRED):\n"
+  printf "     • Open Azure Portal: https://portal.azure.com\n"
+  printf "     • Navigate to: SQL Server > %s\n" "$SQL_SERVER_FQDN"
+  printf "     • Go to 'Networking' (or 'Firewalls and virtual networks')\n"
+  printf "     • Click 'Add your client IPv4 address'\n"
+  printf "     • Save the firewall rule\n\n"
+  printf "  3. Run database migrations (after IP whitelisting):\n"
+  printf "     bash scripts/deploy/01_deploy_infrastructure/02_run_migrations.sh\n\n"
+  printf "  4. Assign RBAC roles (REQUIRED for Container App to pull images):\n"
   printf "     bash scripts/deploy/02_assign_roles/02_assign_roles.sh\n\n"
-  printf "  3. Configure Stripe (BEFORE building Docker image):\n"
+  printf "  5. Configure Stripe (BEFORE building Docker image):\n"
   printf "     bash scripts/deploy/03_configure_stripe.sh\n\n"
-  printf "  4. Build and push Docker image to ACR:\n"
+  printf "  6. Build and push Docker image to ACR:\n"
   printf "     bash scripts/deploy/04_build_and_push_image.sh\n\n"
   printf "  PHASE 2 - Deploy Container App\n"
   printf "  -------------------------------\n"
-  printf "  5. Deploy Container App (now that image exists):\n"
+  printf "  7. Deploy Container App (now that image exists):\n"
   printf "     bash scripts/deploy/05_deploy_container_app.sh\n\n"
-  printf "  6. Bind secrets to Container App:\n"
+  printf "  8. Bind secrets to Container App:\n"
   printf "     bash scripts/deploy/06_bind_secrets.sh\n"
   printf "\n"
   
@@ -65,8 +73,10 @@ show_post_deployment_summary() {
   # ========================================================================
   
   printf "⚠️  IMPORTANT:\n"
-  printf "   • Complete RBAC assignment (step 2) BEFORE building image\n"
-  printf "   • Configure Stripe (step 3) BEFORE building Docker image\n"
+  printf "   • Whitelist your IP address (step 2) BEFORE running migrations\n"
+  printf "   • Run database migrations (step 3) to create tables in SQL Database\n"
+  printf "   • Complete RBAC assignment (step 4) BEFORE building image\n"
+  printf "   • Configure Stripe (step 5) BEFORE building Docker image\n"
   printf "   • Container App cannot be deployed until image exists in ACR\n"
   printf "\n"
   
@@ -81,7 +91,7 @@ show_post_deployment_summary() {
   printf "\n"
   
   print_success "Foundation infrastructure deployed! 🚀"
-  print_info "Continue with step 2 above (assign RBAC roles)"
+  print_info "Continue with step 2 above (whitelist your IP address in Azure Portal)"
 }
 
 

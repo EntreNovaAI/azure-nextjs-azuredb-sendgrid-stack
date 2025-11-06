@@ -129,6 +129,15 @@ EOF
   }
   
   # ========================================================================
+  # Update Node Environment
+  # ========================================================================
+  
+  # CRITICAL: Set NODE_ENV to production for deployment
+  # This was set in prepare_production_env() but we need to ensure it stays set
+  # after copying .env.local again
+  update_or_add_var "NODE_ENV" "production" "Node environment (production for Azure deployment)"
+  
+  # ========================================================================
   # Update Azure SQL Database Variables
   # ========================================================================
   

@@ -4,7 +4,7 @@
 #
 # Purpose:
 #   Check for required project files
-#   - Bicep template (infrastructure/bicep/main.bicep)
+#   - Bicep templates (main-foundation.bicep and main-app.bicep)
 #   - Dockerfile (docker/Dockerfile)
 #   - .env.example (optional but recommended)
 #   - Deployment scripts
@@ -24,22 +24,41 @@
 check_required_files() {
   print_header "Checking Required Files"
   
-  # Check for Bicep template - CRITICAL
-  if [ -f "infrastructure/bicep/main.bicep" ]; then
-    print_success "Main Bicep template found"
+  # Check for Phase 1 Bicep template (Foundation) - CRITICAL
+  if [ -f "infrastructure/bicep/main-foundation.bicep" ]; then
+    print_success "Phase 1 Bicep template found (main-foundation.bicep)"
     
     # Validate Bicep syntax if Bicep CLI is available
     if command -v az >/dev/null 2>&1 && az bicep version >/dev/null 2>&1; then
-      if az bicep build --file infrastructure/bicep/main.bicep --stdout >/dev/null 2>&1; then
-        print_success "Bicep template is valid"
+      if az bicep build --file infrastructure/bicep/main-foundation.bicep --stdout >/dev/null 2>&1; then
+        print_success "Phase 1 Bicep template is valid"
       else
-        print_error "Bicep template has syntax errors"
-        print_info "Run: az bicep build --file infrastructure/bicep/main.bicep"
+        print_error "Phase 1 Bicep template has syntax errors"
+        print_info "Run: az bicep build --file infrastructure/bicep/main-foundation.bicep"
         VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
       fi
     fi
   else
-    print_error "Main Bicep template not found: infrastructure/bicep/main.bicep"
+    print_error "Phase 1 Bicep template not found: infrastructure/bicep/main-foundation.bicep"
+    VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+  fi
+  
+  # Check for Phase 2 Bicep template (Container App) - CRITICAL
+  if [ -f "infrastructure/bicep/main-app.bicep" ]; then
+    print_success "Phase 2 Bicep template found (main-app.bicep)"
+    
+    # Validate Bicep syntax if Bicep CLI is available
+    if command -v az >/dev/null 2>&1 && az bicep version >/dev/null 2>&1; then
+      if az bicep build --file infrastructure/bicep/main-app.bicep --stdout >/dev/null 2>&1; then
+        print_success "Phase 2 Bicep template is valid"
+      else
+        print_error "Phase 2 Bicep template has syntax errors"
+        print_info "Run: az bicep build --file infrastructure/bicep/main-app.bicep"
+        VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+      fi
+    fi
+  else
+    print_error "Phase 2 Bicep template not found: infrastructure/bicep/main-app.bicep"
     VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
   fi
   

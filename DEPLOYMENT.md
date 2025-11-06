@@ -61,7 +61,8 @@ curl https://<your-container-app-url>/api/health
 │
 ├── infrastructure/
 │   └── bicep/                         # Infrastructure as Code
-│       ├── main.bicep                # Main orchestration template
+│       ├── main-foundation.bicep     # Phase 1: Foundation infrastructure
+│       ├── main-app.bicep            # Phase 2: Container App deployment
 │       ├── modules/                  # Modular Bicep templates
 │       │   ├── sql.bicep            # Azure SQL Database
 │       │   ├── acr.bicep            # Container Registry
@@ -525,8 +526,9 @@ az login
 # Update Bicep CLI
 az bicep upgrade
 
-# Lint template
-az bicep build --file infrastructure/bicep/main.bicep
+# Lint templates
+az bicep build --file infrastructure/bicep/main-foundation.bicep
+az bicep build --file infrastructure/bicep/main-app.bicep
 ```
 
 #### "Docker daemon not running"

@@ -33,7 +33,8 @@ This directory contains **Infrastructure as Code** (IaC) templates using Azure B
 
 ```
 infrastructure/bicep/
-├── main.bicep                  # Main orchestration template
+├── main-foundation.bicep       # Phase 1: Foundation infrastructure
+├── main-app.bicep              # Phase 2: Container App deployment
 ├── modules/                    # Modular resource definitions
 │   ├── sql.bicep              # Azure SQL Database
 │   ├── acr.bicep              # Azure Container Registry
@@ -47,6 +48,26 @@ infrastructure/bicep/
 │   └── monitoring.bicep       # App Insights & Log Analytics (optional)
 └── README.md                   # This file
 ```
+
+## Deployment Strategy
+
+This project uses a **two-phase deployment** approach to solve the "chicken and egg" problem:
+
+### Phase 1: Foundation Infrastructure (`main-foundation.bicep`)
+Deploys all infrastructure **except** the Container App:
+- Azure SQL Database
+- Azure Container Registry (ACR)
+- Azure Key Vault
+- Container Apps Environment
+- Managed Identity for Container App
+- Optional: Storage, OpenAI, Web PubSub, Application Insights
+
+**Why?** You need ACR before you can build and push a Docker image.
+
+### Phase 2: Container App (`main-app.bicep`)
+Deploys only the Container App after the Docker image is built and pushed to ACR.
+
+**Usage:** See deployment scripts in `scripts/deploy/`
 
 ## Core Resources
 
@@ -338,7 +359,25 @@ All resources follow this pattern:
 
 ## Deployment
 
-### Using Azure CLI
+### Using Deployment Scripts (Recommended)
+
+The deployment is split into two phases:
+
+```bash
+# Phase 1: Deploy foundation infrastructure
+bash scripts/deploy/01_deploy_infrastructure/01_deploy_infrastructure.sh
+
+# Then: Assign RBAC roles
+bash scripts/deploy/02_assign_roles/02_assign_roles.sh
+
+# Then: Build and push Docker image
+bash scripts/deploy/04_build_and_push_image/04_build_and_push_image.sh
+
+# Phase 2: Deploy Container App
+bash scripts/deploy/05_deploy_container_app/05_deploy_container_app.sh
+```
+
+### Using Azure CLI (Manual)
 
 ```bash
 # Create resource group
@@ -346,47 +385,43 @@ az group create \
   --name my-rg \
   --location eastus
 
-# Deploy with minimal parameters
+# Phase 1: Deploy foundation infrastructure
 az deployment group create \
   --resource-group my-rg \
-  --template-file main.bicep \
+  --template-file infrastructure/bicep/main-foundation.bicep \
   --parameters \
     prefix=myapp \
     location=eastus \
     sqlAdminUsername=sqladmin \
     sqlAdminPassword='SecurePassword123!'
 
-# Deploy with optional services
+# ... then build and push Docker image ...
+
+# Phase 2: Deploy Container App
 az deployment group create \
   --resource-group my-rg \
-  --template-file main.bicep \
+  --template-file infrastructure/bicep/main-app.bicep \
   --parameters \
     prefix=myapp \
-    location=eastus \
-    sqlAdminUsername=sqladmin \
-    sqlAdminPassword='SecurePassword123!' \
-    deployStorage=true \
-    deployMonitoring=true
-```
-
-### Using Deployment Script
-
-```bash
-# Recommended: Use provided deployment script
-bash scripts/deploy/01_az_deploy_infra.sh
+    acrName='myappacrabc123' \
+    containerAppEnvId='/subscriptions/.../resourceGroups/my-rg/providers/Microsoft.App/managedEnvironments/...' \
+    managedIdentityId='/subscriptions/.../resourceGroups/my-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/...'
 ```
 
 ### Validate Before Deployment
 
 ```bash
-# Lint Bicep template
-az bicep build --file main.bicep
+# Validate Phase 1 template
+az bicep build --file infrastructure/bicep/main-foundation.bicep
 
-# What-if analysis
+# What-if analysis for Phase 1
 az deployment group what-if \
   --resource-group my-rg \
-  --template-file main.bicep \
+  --template-file infrastructure/bicep/main-foundation.bicep \
   --parameters prefix=myapp sqlAdminUsername=sqladmin sqlAdminPassword='SecurePassword123!'
+
+# Validate Phase 2 template
+az bicep build --file infrastructure/bicep/main-app.bicep
 ```
 
 ---
@@ -485,7 +520,7 @@ sqlDatabaseSku: 'S0'  // Instead of 'Basic'
 ### Add Custom Module
 
 1. Create new file in `modules/`
-2. Add module reference in `main.bicep`:
+2. Add module reference in `main-foundation.bicep`:
 
 ```bicep
 module customResource 'modules/custom.bicep' = {
@@ -562,21 +597,25 @@ az bicep version
 ### Local Validation
 
 ```bash
-# Lint all Bicep files
-az bicep build --file main.bicep
-az bicep build --file modules/sql.bicep
+# Lint Phase 1 and Phase 2 templates
+az bicep build --file infrastructure/bicep/main-foundation.bicep
+az bicep build --file infrastructure/bicep/main-app.bicep
+
+# Lint individual modules
+az bicep build --file infrastructure/bicep/modules/sql.bicep
+az bicep build --file infrastructure/bicep/modules/container-app.bicep
 # ... repeat for each module
 
-# What-if analysis
+# What-if analysis for Phase 1
 az deployment group what-if \
   --resource-group test-rg \
-  --template-file main.bicep \
-  --parameters @params.json
+  --template-file infrastructure/bicep/main-foundation.bicep \
+  --parameters @params-foundation.json
 ```
 
 ### Parameter Files
 
-Create `params.json` for testing:
+Create `params-foundation.json` for Phase 1 testing:
 
 ```json
 {
@@ -599,13 +638,13 @@ Create `params.json` for testing:
 }
 ```
 
-Deploy with parameter file:
+Deploy Phase 1 with parameter file:
 
 ```bash
 az deployment group create \
   --resource-group test-rg \
-  --template-file main.bicep \
-  --parameters @params.json
+  --template-file infrastructure/bicep/main-foundation.bicep \
+  --parameters @params-foundation.json
 ```
 
 ---
@@ -615,21 +654,36 @@ az deployment group create \
 ### GitHub Actions
 
 ```yaml
-- name: Deploy Bicep
+# Phase 1: Deploy Foundation
+- name: Deploy Foundation Infrastructure
   uses: azure/arm-deploy@v1
   with:
     subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     resourceGroupName: ${{ secrets.AZURE_RG }}
-    template: ./infrastructure/bicep/main.bicep
+    template: ./infrastructure/bicep/main-foundation.bicep
     parameters: >
       prefix=${{ secrets.PREFIX }}
       sqlAdminUsername=${{ secrets.SQL_USER }}
       sqlAdminPassword=${{ secrets.SQL_PASSWORD }}
+
+# Phase 2: Deploy Container App (after image build)
+- name: Deploy Container App
+  uses: azure/arm-deploy@v1
+  with:
+    subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    resourceGroupName: ${{ secrets.AZURE_RG }}
+    template: ./infrastructure/bicep/main-app.bicep
+    parameters: >
+      prefix=${{ secrets.PREFIX }}
+      acrName=${{ steps.phase1.outputs.acrName }}
+      containerAppEnvId=${{ steps.phase1.outputs.containerAppEnvId }}
+      managedIdentityId=${{ steps.phase1.outputs.managedIdentityId }}
 ```
 
 ### Azure DevOps
 
 ```yaml
+# Phase 1: Deploy Foundation
 - task: AzureResourceManagerTemplateDeployment@3
   inputs:
     deploymentScope: 'Resource Group'
@@ -638,8 +692,20 @@ az deployment group create \
     resourceGroupName: '$(resourceGroupName)'
     location: 'East US'
     templateLocation: 'Linked artifact'
-    csmFile: '$(Build.SourcesDirectory)/infrastructure/bicep/main.bicep'
+    csmFile: '$(Build.SourcesDirectory)/infrastructure/bicep/main-foundation.bicep'
     overrideParameters: '-prefix $(prefix) -sqlAdminUsername $(sqlUser) -sqlAdminPassword $(sqlPassword)'
+
+# Phase 2: Deploy Container App
+- task: AzureResourceManagerTemplateDeployment@3
+  inputs:
+    deploymentScope: 'Resource Group'
+    azureResourceManagerConnection: 'Azure Connection'
+    subscriptionId: '$(subscriptionId)'
+    resourceGroupName: '$(resourceGroupName)'
+    location: 'East US'
+    templateLocation: 'Linked artifact'
+    csmFile: '$(Build.SourcesDirectory)/infrastructure/bicep/main-app.bicep'
+    overrideParameters: '-prefix $(prefix) -acrName $(acrName) -containerAppEnvId $(containerAppEnvId) -managedIdentityId $(managedIdentityId)'
 ```
 
 ---
@@ -664,5 +730,5 @@ For issues or questions:
 
 ---
 
-**Ready to deploy?** Use `bash scripts/deploy/01_az_deploy_infra.sh`
+**Ready to deploy?** Use `bash scripts/deploy/01_deploy_infrastructure/01_deploy_infrastructure.sh`
 
