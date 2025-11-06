@@ -10,7 +10,7 @@
 #   bash scripts/dev/02_db_setup.sh [command]
 #
 # Commands:
-#   (no args)       - Check migration status, then run migrations to latest
+#   (no args)       - Run migrations to latest, then check status to verify
 #   migrate         - Run migrations to latest only
 #   check           - Check migration status only
 #   migrate:down    - Migrate down one step
@@ -78,12 +78,60 @@ check_env_file() {
   fi
 }
 
+# Check if required database environment variables are set (loads from env files)
+check_db_env_vars() {
+  print_info "Checking database environment variables..."
+  
+  # Load environment variables from .env.local or .env if they exist
+  if [ -f ".env.local" ]; then
+    export $(grep -v '^#' .env.local | xargs 2>/dev/null || true)
+  elif [ -f ".env" ]; then
+    export $(grep -v '^#' .env | xargs 2>/dev/null || true)
+  fi
+  
+  local missing_vars=()
+  
+  # Check each required variable
+  [ -z "$MSSQL_SERVER" ] && missing_vars+=("MSSQL_SERVER")
+  [ -z "$MSSQL_DATABASE" ] && missing_vars+=("MSSQL_DATABASE")
+  [ -z "$MSSQL_USER" ] && missing_vars+=("MSSQL_USER")
+  [ -z "$MSSQL_PASSWORD" ] && missing_vars+=("MSSQL_PASSWORD")
+  [ -z "$MSSQL_ENCRYPT" ] && missing_vars+=("MSSQL_ENCRYPT")
+  
+  if [ ${#missing_vars[@]} -gt 0 ]; then
+    print_error "Missing required database environment variables:"
+    for var in "${missing_vars[@]}"; do
+      print_error "  - $var"
+    done
+    echo ""
+    print_info "To fix this:"
+    print_info "1. Create a .env.local file in the project root"
+    print_info "2. Add the following variables:"
+    echo ""
+    echo "    MSSQL_SERVER=localhost"
+    echo "    MSSQL_DATABASE=mydatabase"
+    echo "    MSSQL_USER=sa"
+    echo "    MSSQL_PASSWORD=YourPassword123!"
+    echo "    MSSQL_ENCRYPT=false"
+    echo ""
+    print_info "For local SQL Server setup using Docker:"
+    echo '    docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=YourPassword123!" \'
+    echo '      -p 1433:1433 --name sqlserver -d mcr.microsoft.com/mssql/server:2022-latest'
+    echo ""
+    return 1
+  fi
+  
+  print_success "All required database environment variables are set"
+  return 0
+}
+
 # Check migration status
 run_check_status() {
   print_header "Checking Migration Status"
   
   print_info "Running migration status check..."
-  pnpm dlx tsx kysely/check-migration-status.ts
+  # Use absolute path to ensure correct file is found
+  pnpm dlx tsx "$PROJECT_ROOT/kysely/check-migration-status.ts"
   
   print_success "Status check completed"
 }
@@ -93,7 +141,8 @@ run_migrations() {
   print_header "Running Database Migrations"
   
   print_info "Migrating to latest version..."
-  pnpm dlx tsx kysely/migration-script.ts
+  # Use absolute path to ensure correct file is found
+  pnpm dlx tsx "$PROJECT_ROOT/kysely/migration-script.ts"
   
   print_success "Migrations completed successfully"
 }
@@ -104,7 +153,8 @@ run_migrate_down() {
   
   print_warning "This will revert the last applied migration"
   print_info "Running migrate:down..."
-  pnpm dlx tsx kysely/migration-script.ts migrate:down
+  # Use absolute path to ensure correct file is found
+  pnpm dlx tsx "$PROJECT_ROOT/kysely/migration-script.ts" migrate:down
   
   print_success "Migration rolled back successfully"
 }
@@ -115,7 +165,8 @@ run_migrate_to() {
   print_header "Migrating to Specific Version"
   
   print_info "Migrating to: $migration_name"
-  pnpm dlx tsx kysely/migration-script.ts migrate:to "$migration_name"
+  # Use absolute path to ensure correct file is found
+  pnpm dlx tsx "$PROJECT_ROOT/kysely/migration-script.ts" migrate:to "$migration_name"
   
   print_success "Migration to $migration_name completed"
 }
@@ -136,6 +187,12 @@ main() {
   
   # Check environment configuration (warning only)
   check_env_file || true
+  
+  # Check database environment variables (required for DB operations)
+  if ! check_db_env_vars; then
+    print_error "Cannot proceed without required database environment variables"
+    exit 1
+  fi
   
   # Execute based on command
   case "$command" in
@@ -165,16 +222,16 @@ main() {
       ;;
     
     default)
-      # Default: check status then migrate
-      run_check_status
-      echo ""  # Add spacing between operations
+      # Default: run migrations first, then check status to verify
       run_migrations
+      echo ""  # Add spacing between operations
+      run_check_status
       ;;
     
     *)
       print_error "Unknown command: $command"
       print_info "Available commands:"
-      print_info "  (no args)       - Check status then migrate"
+      print_info "  (no args)       - Run migrations, then check status"
       print_info "  check           - Check migration status only"
       print_info "  migrate         - Run migrations only"
       print_info "  migrate:down    - Rollback last migration"

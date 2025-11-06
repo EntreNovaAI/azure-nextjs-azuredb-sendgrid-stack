@@ -18,21 +18,61 @@ import { Kysely, Migrator, FileMigrationProvider, MssqlDialect } from 'kysely'
 import * as Tedious from 'tedious'
 import * as Tarn from 'tarn'
 
+// Determine project root directory
+// This allows the script to be run from any location (project root or subdirectory)
+// and still find the correct .env files
+const projectRoot = process.cwd()
+
 // Load environment files based on NODE_ENV
+// Uses absolute paths so script can be run from command line from any directory
 // Supports multiple scenarios:
 // - Development: .env.local and .env (for local DB)
 // - Production: .env.production (for Azure DB)
 // - Command line: .env.production, then fallback to .env
+console.log('Loading environment from:', projectRoot)
+console.log('NODE_ENV:', process.env.NODE_ENV || 'not set')
+
 if (process.env.NODE_ENV === 'development') {
   // Development mode: use local env files
-  config({ path: '.env.local' })
-  config({ path: '.env' })
+  const localPath = path.join(projectRoot, '.env.local')
+  const envPath = path.join(projectRoot, '.env')
+  console.log('Attempting to load:', localPath)
+  // Use override: true to ensure file values take precedence over shell-exported vars
+  const result1 = config({ path: localPath, override: true })
+  if (result1.error) {
+    console.log('  ⚠ .env.local not found or error:', result1.error.message)
+  } else {
+    console.log(`  ✓ Loaded .env.local (${Object.keys(result1.parsed || {}).length} vars)`)
+  }
+  console.log('Attempting to load:', envPath)
+  const result2 = config({ path: envPath, override: true })
+  if (result2.error) {
+    console.log('  ⚠ .env not found or error:', result2.error.message)
+  } else {
+    console.log(`  ✓ Loaded .env (${Object.keys(result2.parsed || {}).length} vars)`)
+  }
 } else {
   // Production/deployment mode: use production env file
-  config({ path: '.env.production' })
-  // Fallback to .env if .env.production doesn't exist (manual command line usage)
-  config({ path: '.env' })
+  const prodPath = path.join(projectRoot, '.env.production')
+  const envPath = path.join(projectRoot, '.env')
+  console.log('Attempting to load:', prodPath)
+  // Use override: true to ensure file values take precedence over shell-exported vars
+  const result1 = config({ path: prodPath, override: true })
+  if (result1.error) {
+    console.log('  ⚠ .env.production not found or error:', result1.error.message)
+  } else {
+    console.log(`  ✓ Loaded .env.production (${Object.keys(result1.parsed || {}).length} vars)`)
+  }
+  console.log('Attempting to load:', envPath)
+  const result2 = config({ path: envPath, override: true })
+  if (result2.error) {
+    console.log('  ⚠ .env not found or error:', result2.error.message)
+  } else {
+    console.log(`  ✓ Loaded .env (${Object.keys(result2.parsed || {}).length} vars)`)
+  }
 }
+
+console.log('')
 
 // Minimal DB type for migrations on purpose (Kysely<any>)
 // Migrations must not depend on app runtime types. See docs.
