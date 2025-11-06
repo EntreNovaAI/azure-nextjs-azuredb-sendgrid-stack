@@ -145,6 +145,20 @@ check_prerequisites() {
   fi
   print_success "Logged in to Azure CLI"
   
+  # Check if user has Key Vault Secrets Officer role
+  printf "\n"
+  print_warning "This script requires the 'Key Vault Secrets Officer' role"
+  print_info "You must have this role assigned to store secrets in Key Vault"
+  printf "\n"
+  
+  if ! confirm "Have you assigned yourself the Key Vault Secrets Officer role?"; then
+    print_error "Please assign the Key Vault Secrets Officer role before continuing"
+    print_info "Run: az role assignment create --role 'Key Vault Secrets Officer' --assignee <your-user-principal-id> --scope <key-vault-resource-id>"
+    print_info "Or use the Azure Portal to assign the role"
+    exit 1
+  fi
+  print_success "Key Vault Secrets Officer role confirmed"
+  
   # Check if env file exists
   if [ ! -f "$ENV_FILE" ]; then
     print_error "Environment file not found: $ENV_FILE"
@@ -504,7 +518,7 @@ main() {
   check_prerequisites
   collect_parameters
   parse_env_file
-  # store_secrets_in_keyvault
+  store_secrets_in_keyvault
   bind_secrets_to_container_app
   verify_configuration
   show_post_binding_instructions

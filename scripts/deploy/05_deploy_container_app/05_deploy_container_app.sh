@@ -236,8 +236,8 @@ load_config() {
   # Read App Insights name (OPTIONAL - from Phase 1)
   APP_INSIGHTS_NAME=$(grep "^APP_INSIGHTS_NAME=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 || true)
   
-  # Get location from resource group
-  LOCATION=$(az group show --name "$RESOURCE_GROUP" --query location -o tsv)
+  # Get location from managed identity (ensures consistent regional deployment)
+  LOCATION=$(az identity show --ids "$MANAGED_IDENTITY_ID" --query location -o tsv)
   
   # Build full image name
   IMAGE_NAME="${ACR_LOGIN_SERVER}/${CONTAINER_APP_NAME}:${IMAGE_TAG}"
