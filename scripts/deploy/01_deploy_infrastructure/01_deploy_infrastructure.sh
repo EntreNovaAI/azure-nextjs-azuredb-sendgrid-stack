@@ -28,6 +28,7 @@
 #   This script has been refactored into a modular architecture.
 #   Individual functionality is split into focused library files in lib/:
 #   - 00_utils.sh          : Utility functions (printing, input)
+#   - 00_env_preparation.sh: Prepare .env.production from .env.local
 #   - 01_prerequisites.sh  : Prerequisites checking
 #   - 02_parameters.sh     : Parameter collection
 #   - 03_validation.sh     : Bicep validation and what-if
@@ -116,6 +117,7 @@ LIB_DIR="$SCRIPT_DIR/lib"
 
 # Source all library files in execution order
 source "$LIB_DIR/00_utils.sh"
+source "$LIB_DIR/00_env_preparation.sh"
 source "$LIB_DIR/01_prerequisites.sh"
 source "$LIB_DIR/02_parameters.sh"
 source "$LIB_DIR/03_validation.sh"
@@ -134,6 +136,7 @@ main() {
   
   # Execute all deployment steps in order
   # Each function is defined in its respective library file
+  prepare_production_env   # First, copy .env.local to .env.production and set NODE_ENV=production
   check_prerequisites
   collect_parameters
   show_deployment_summary
