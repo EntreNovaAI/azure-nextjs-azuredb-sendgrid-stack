@@ -255,80 +255,45 @@ authenticate_stripe() {
 retrieve_api_keys() {
   print_header "Retrieve API Keys"
   
-  print_info "Fetching your Stripe test API keys..."
+  # NOTE: Always use dashboard keys, not CLI keys (CLI keys are restricted)
+  # The Stripe CLI creates its own restricted key that should NOT be used in your app
   
-  # The Stripe CLI stores keys in the config after login
-  # We can retrieve them using the Stripe CLI
+  print_warning "IMPORTANT: Use keys from your Stripe Dashboard, not CLI keys"
+  print_info "Get your API keys from: https://dashboard.stripe.com/test/apikeys"
+  printf "\n"
   
-  # Get the test mode API key (secret key)
+  # Collect Secret Key
   local secret_key
-  secret_key=$(stripe config --list 2>/dev/null | grep "test_mode_api_key" | awk '{print $3}' || echo "")
+  while true; do
+    printf "📋 Enter your Stripe test secret key (sk_test_...): "
+    read -r secret_key
+    
+    # Validate format - allow both test and live keys for flexibility
+    if [[ "$secret_key" =~ ^sk_test_ ]] || [[ "$secret_key" =~ ^sk_live_ ]]; then
+      break
+    else
+      print_error "Invalid key format. Must start with 'sk_test_' or 'sk_live_'"
+    fi
+  done
   
-  if [ -z "$secret_key" ] || [ "$secret_key" = "null" ]; then
-    print_warning "Could not automatically retrieve secret key from CLI config"
-    printf "\n"
-    print_info "👉 Action: Get your API keys from Stripe Dashboard"
-    print_info "   Open: https://dashboard.stripe.com/test/apikeys"
-    printf "\n"
+  # Collect Publishable Key
+  local publishable_key
+  while true; do
+    printf "📋 Enter your Stripe publishable key (pk_test_... or pk_live_...): "
+    read -r publishable_key
     
-    # Collect Secret Key
-    while true; do
-      printf "📋 Enter your Stripe test secret key (sk_test_...): "
-      read -r secret_key
-      
-      # Validate format
-      if [[ "$secret_key" =~ ^sk_test_ ]]; then
-        break
-      else
-        print_error "Invalid key format. Must start with 'sk_test_'"
-      fi
-    done
-    
-    # Collect Publishable Key
-    local publishable_key
-    while true; do
-      printf "📋 Enter your Stripe test publishable key (pk_test_...): "
-      read -r publishable_key
-      
-      # Validate format
-      if [[ "$publishable_key" =~ ^pk_test_ ]]; then
-        break
-      else
-        print_error "Invalid key format. Must start with 'pk_test_'"
-      fi
-    done
-    
-    STRIPE_SECRET_KEY="$secret_key"
-    STRIPE_PUBLISHABLE_KEY="$publishable_key"
-  else
-    # We have the secret key from config
-    STRIPE_SECRET_KEY="$secret_key"
-    print_success "Retrieved secret key from Stripe CLI"
-    
-    # Get publishable key - API doesn't expose this directly
-    printf "\n"
-    print_info "👉 Action: Get your publishable key"
-    print_info "   The Stripe API doesn't provide publishable keys via CLI."
-    print_info "   Open: https://dashboard.stripe.com/test/apikeys"
-    print_info "   Look for: 'Publishable key' section"
-    printf "\n"
-    
-    local publishable_key
-    while true; do
-      printf "📋 Enter your Stripe test publishable key (pk_test_...): "
-      read -r publishable_key
-      
-      # Validate format
-      if [[ "$publishable_key" =~ ^pk_test_ ]]; then
-        STRIPE_PUBLISHABLE_KEY="$publishable_key"
-        break
-      else
-        print_error "Invalid key format. Must start with 'pk_test_'"
-      fi
-    done
-  fi
+    # Validate format - allow both test and live keys for flexibility
+    if [[ "$publishable_key" =~ ^pk_test_ ]] || [[ "$publishable_key" =~ ^pk_live_ ]]; then
+      break
+    else
+      print_error "Invalid key format. Must start with 'pk_test_' or 'pk_live_'"
+    fi
+  done
   
-  print_success "API keys collected"
+  STRIPE_SECRET_KEY="$secret_key"
+  STRIPE_PUBLISHABLE_KEY="$publishable_key"
+  
+  print_success "API keys collected from dashboard"
 }
 
 # ============================================================================
@@ -538,6 +503,11 @@ show_next_steps() {
   print_info "✅ Created: Basic Plan ($BASIC_PRICE/month)"
   print_info "✅ Created: Premium Plan ($PREMIUM_PRICE/month)"
   print_info "✅ Updated: $ENV_FILE with API keys and product IDs"
+  printf "\n"
+  
+  print_warning "REMINDER: Dashboard keys vs CLI keys"
+  print_info "The keys in your $ENV_FILE are from your Stripe Dashboard"
+  print_info "Do NOT use the Stripe CLI's restricted key in your application"
   printf "\n"
   printf "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
   printf "\n"
