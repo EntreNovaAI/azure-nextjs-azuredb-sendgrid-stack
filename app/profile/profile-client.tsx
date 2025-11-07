@@ -38,6 +38,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
   const router = useRouter()
 
   // Handle payment method update via Stripe Billing Portal
+  // Opens the Stripe-hosted portal for customers to manage payment methods
   const handleUpdatePaymentMethod = async () => {
     if (!user.stripeCustomerId) {
       alert('No Stripe customer found for this account.')
@@ -47,14 +48,20 @@ export function ProfileClient({ user }: ProfileClientProps) {
     try {
       setIsPortalLoading(true)
       const res = await createBillingPortalAction()
+      
       if (!res.success || !res.data?.url) {
-        alert(res.error || 'Failed to open billing portal')
+        // Show detailed error message to help with troubleshooting
+        const errorMsg = res.error || 'Failed to open billing portal'
+        console.error('Billing portal error:', errorMsg)
+        alert(errorMsg)
         return
       }
+      
+      // Open the Stripe billing portal in a new tab
       window.open(res.data.url, '_blank', 'noopener,noreferrer')
     } catch (err) {
       console.error('Error opening billing portal:', err)
-      alert('An error occurred opening the billing portal.')
+      alert('An error occurred opening the billing portal. Please try again or contact support.')
     } finally {
       setIsPortalLoading(false)
     }

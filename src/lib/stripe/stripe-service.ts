@@ -319,22 +319,70 @@ export async function scheduleDowngrade(subscriptionId: string, newPriceId: stri
 
 /**
  * Create a Stripe Billing Portal session for payment method updates
+ * 
+ * This function attempts to retrieve the default billing portal configuration
+ * and use it when creating a session. If no configuration exists, it provides
+ * clear instructions for setting one up.
+ * 
+ * Setup Instructions (one-time per mode):
+ * - Test mode: https://dashboard.stripe.com/test/settings/billing/portal
+ * - Live mode: https://dashboard.stripe.com/settings/billing/portal
+ * 
+ * Click "Activate test link" or configure portal settings and save.
  */
 export async function createBillingPortalSession(stripeCustomerId: string): Promise<ServiceResponse<{ url: string }>> {
   try {
+    // Validate customer ID format
     if (!stripeCustomerId?.startsWith('cus_')) {
       return { success: false, error: 'Invalid Stripe customer ID' }
     }
 
-    const session = await stripe.billingPortal.sessions.create({
+    // Try to retrieve the default billing portal configuration
+    // This helps avoid configuration errors by explicitly using the default config
+    let configurationId: string | undefined
+    
+    try {
+      const configurations = await stripe.billingPortal.configurations.list({
+        is_default: true,
+        limit: 1
+      })
+      
+      // Use the default configuration if it exists
+      if (configurations.data && configurations.data.length > 0) {
+        configurationId = configurations.data[0].id
+      }
+    } catch (configError) {
+      // If we can't retrieve configurations, we'll try without it
+      // The error will be caught in the main try-catch if portal isn't configured
+      console.warn('Could not retrieve billing portal configuration:', configError)
+    }
+
+    // Create the billing portal session
+    // Include configuration if we found one, otherwise let Stripe use account default
+    const sessionParams: any = {
       customer: stripeCustomerId,
       return_url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/profile`
-    })
+    }
+    
+    if (configurationId) {
+      sessionParams.configuration = configurationId
+    }
+    
+    const session = await stripe.billingPortal.sessions.create(sessionParams)
 
     return { success: true, data: { url: session.url } }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating billing portal session:', error)
-    return { success: false, error: 'Failed to create billing portal session' }
+    
+    // Provide helpful error message for common configuration issue
+    if (error?.code === 'invalid_request_error' || error?.message?.includes('configuration')) {
+      return { 
+        success: false, 
+        error: 'Stripe Customer Portal not configured. Please configure it in your Stripe dashboard at: https://dashboard.stripe.com/test/settings/billing/portal' 
+      }
+    }
+    
+    return { success: false, error: error?.message || 'Failed to create billing portal session' }
   }
 }
 
