@@ -82,7 +82,7 @@ export default function LandingPage() {
             {/* CTA button - scrolls to plans section */}
             <div className="flex justify-center">
               <Link href="#plans">
-                <Button size="lg" className="text-lg px-8 py-6">
+                <Button className="h-10 rounded-md px-8 text-lg py-6">
                   View Plans
                 </Button>
               </Link>
@@ -165,7 +165,7 @@ export default function LandingPage() {
               Stop configuring. Start shipping.
             </p>
             <Link href="/auth/signup">
-              <Button size="lg" className="text-lg px-12 py-6">
+              <Button className="h-10 rounded-md px-12 text-lg py-6">
                 Start Free →
               </Button>
             </Link>

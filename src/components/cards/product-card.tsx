@@ -66,9 +66,10 @@ export function ProductCard({
       return
     }
     
-    // If not authenticated, redirect to login
+    // If not authenticated, redirect to signup page
+    // Use the custom signup page route, not NextAuth API route
     if (!session) {
-      router.push('/api/auth/signin')
+      router.push('/auth/signup')
       return
     }
     
