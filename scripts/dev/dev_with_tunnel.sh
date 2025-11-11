@@ -115,9 +115,22 @@ if [ "$TUNNEL_CHOICE" = "1" ]; then
   sleep 3
   
   # Try to get the URL from the log file
+  # Azure Dev Tunnels outputs URLs with port numbers like: https://xxx.use.devtunnels.ms:3000
   # We'll try 10 times, waiting 2 seconds between tries
   for i in {1..10}; do
-    PUBLIC_URL=$(grep -o 'https://[^[:space:]]*\.devtunnels\.ms' "$TUNNEL_LOG" | head -n1 || echo "")
+    # Try pattern with port number first (most common format)
+    # Format: https://xxx.use.devtunnels.ms:3000 or https://xxx.global.devtunnels.ms:3000
+    PUBLIC_URL=$(grep -oE 'https://[a-zA-Z0-9-]+\.(use|global)\.devtunnels\.ms:[0-9]+' "$TUNNEL_LOG" | head -n1 || echo "")
+    
+    # If still not found, try pattern without port (fallback)
+    if [ -z "$PUBLIC_URL" ]; then
+      PUBLIC_URL=$(grep -oE 'https://[a-zA-Z0-9-]+\.(use|global)\.devtunnels\.ms' "$TUNNEL_LOG" | head -n1 || echo "")
+    fi
+    
+    # If still not found, try a broader pattern
+    if [ -z "$PUBLIC_URL" ]; then
+      PUBLIC_URL=$(grep -oE 'https://[^[:space:]]*devtunnels\.ms[^[:space:]]*' "$TUNNEL_LOG" | head -n1 || echo "")
+    fi
     
     # If we found a URL, stop trying
     if [ ! -z "$PUBLIC_URL" ]; then
@@ -131,6 +144,10 @@ if [ "$TUNNEL_CHOICE" = "1" ]; then
   # Check if we got a URL
   if [ -z "$PUBLIC_URL" ]; then
     echo "❌ Could not get tunnel URL."
+    echo ""
+    echo "   Debug info - checking log file:"
+    echo "   Last 20 lines of tunnel log:"
+    tail -n 20 "$TUNNEL_LOG" | sed 's/^/   /'
     echo ""
     echo "   Make sure Azure Dev Tunnels is installed:"
     echo "   https://aka.ms/devtunnels/download"
