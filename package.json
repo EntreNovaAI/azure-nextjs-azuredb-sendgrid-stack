@@ -6,7 +6,6 @@
     "build": "next build",
     "start": "next start -p ${PORT:-3000}",
     "lint": "next lint",
-    "db:init": "curl -X POST http://localhost:3000/api/db/init",
     "test": "vitest",
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
