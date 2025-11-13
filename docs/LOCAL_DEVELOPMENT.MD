@@ -291,6 +291,42 @@ Use the `/style` command in Cursor to quickly update:
 - Brand colors (light/dark mode)
 - Typography (only supports Google Fonts)
 
+### Build Features with BMAD & Product Command
+
+When building new features, follow this workflow:
+
+1. **Start with BMAD for brainstorming:**
+   - Use the BMAD (Brainstorm, Model, Architect, Develop) methodology
+   - Load BMAD into your Cursor chat to guide the planning process
+   - Work through brainstorming and requirements gathering
+   - Document your ideas and user stories
+
+2. **Switch to `/product` command for development:**
+   - Once brainstorming is complete, use `@product.md` in your chat with the appropriate bmad agent.
+   - The product command will help you:
+     - Design the architecture
+     - Create PRDs (Product Requirements Documents)
+     - Build product pages with consistent design patterns
+     - Follow technical standards automatically
+   - See [CURSOR_COMMANDS.md](CURSOR_COMMANDS.md) for detailed usage
+
+3. **Generate documentation as you go:**
+   - Don't wait until the end to write docs
+   - Document decisions and changes in real-time
+   - Keep PRDs and architecture docs updated
+
+### Learn About All Cursor Commands
+
+This project includes specialized AI commands to streamline development:
+
+- `/init` - Project setup and initialization
+- `/product` - Build product pages and features
+- `/ad-page` - Create marketing pages
+- `/landing-page` - Update the main landing page
+- `/style` - Change colors and fonts
+
+**See [CURSOR_COMMANDS.md](CURSOR_COMMANDS.md) for complete usage guide and examples.**
+
 ### Review Development Principles
 
 See [DEVELOPMENT_PRINCIPLES.md](DEVELOPMENT_PRINCIPLES.MD) for:
@@ -299,9 +335,6 @@ See [DEVELOPMENT_PRINCIPLES.md](DEVELOPMENT_PRINCIPLES.MD) for:
 - Component guidelines
 - Content separation patterns
 - Best practices
-
----
-
 
 ---
 

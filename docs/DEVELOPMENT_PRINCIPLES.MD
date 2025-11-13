@@ -92,6 +92,129 @@ export default function LandingPage() {
 
 ---
 
+## 🎨 Centralized Design System
+
+### Colors - One Source of Truth
+
+**All colors must be defined in `src/constants/colors.ts`**
+
+This ensures consistent branding across the entire application and makes theme updates trivial.
+
+```typescript
+// ✅ Good - Uses centralized color system
+import { getColors } from '@/src/constants/colors'
+
+const { resolvedTheme } = useTheme()
+const colors = getColors(resolvedTheme === 'dark')
+
+return (
+  <button style={{ backgroundColor: colors.accent }}>
+    Click me
+  </button>
+)
+```
+
+```typescript
+// ❌ Bad - Hardcoded colors
+return (
+  <button style={{ backgroundColor: '#FF5733' }}>
+    Click me
+  </button>
+)
+```
+
+**Why?**
+- Change brand colors in one place, updates everywhere
+- Automatic light/dark mode support
+- No color inconsistencies across pages
+- Marketing can update branding without touching code
+
+**Available colors:**
+- `primary` - Main brand color
+- `secondary` - Supporting elements
+- `accent` - CTAs and highlights
+- `background` / `backgroundAlt` - Page backgrounds
+- `text` / `textSecondary` - Text colors
+
+### Fonts - Globally Configured
+
+**All fonts are configured in `src/lib/fonts/font-loader.ts`**
+
+Fonts are loaded once and applied globally. No need to import fonts in individual components.
+
+```typescript
+// ✅ Good - Fonts already applied globally
+export default function MyPage() {
+  return (
+    <div>
+      <h1>This uses the heading font automatically</h1>
+      <p>This uses the primary font automatically</p>
+      <code>This uses the mono font automatically</code>
+    </div>
+  )
+}
+```
+
+```typescript
+// ❌ Bad - Don't import fonts in components
+import { Inter } from 'next/font/google'
+
+export default function MyPage() {
+  return <div className={Inter.className}>Text</div>
+}
+```
+
+**Why?**
+- Change fonts in one place (`src/lib/fonts/font-loader.ts`)
+- Update `src/constants/fonts.ts` to document the change
+- Fonts load once, not in every component
+- Consistent typography across the app
+- Better performance (no duplicate font loads)
+
+**To change a font:**
+1. Edit `src/lib/fonts/font-loader.ts` - change the import and loader
+2. Edit `src/constants/fonts.ts` - update documentation
+3. Restart dev server
+4. Done! Font applies everywhere automatically
+
+### Theme Awareness Pattern
+
+**When building theme-aware components:**
+
+```typescript
+'use client'
+
+import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
+import { getColors } from '@/src/constants/colors'
+
+export default function ThemedComponent() {
+  // Get current theme
+  const { resolvedTheme } = useTheme()
+  
+  // Prevent hydration mismatch
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  
+  // Get theme-aware colors
+  const colors = getColors(mounted ? resolvedTheme === 'dark' : false)
+  
+  return (
+    <div style={{ color: colors.primary }}>
+      Adapts to light/dark mode automatically
+    </div>
+  )
+}
+```
+
+**Benefits:**
+- Colors automatically adapt to theme
+- No hydration errors
+- Consistent theme behavior
+- Works with system preferences
+
+---
+
 ## 🧩 Component Guidelines
 
 ### Server vs Client Components
@@ -188,6 +311,8 @@ Before committing code, ask yourself:
 - [ ] Is it clear if this is a client or server component?
 - [ ] Is the logic in `src/` and the page in `app/`?
 - [ ] Is marketing text in a content object at the top?
+- [ ] Are colors using `getColors()` from `@/src/constants/colors`?
+- [ ] Are fonts relying on global config (not imported in component)?
 - [ ] Would this be easy to change in 6 months?
 - [ ] Is it modular and focused on one thing?
 - [ ] Have I been explicit about what this does?
@@ -201,6 +326,7 @@ Before committing code, ask yourself:
 - Update copy and content without touching code
 - No risk of breaking functionality
 - Fast iteration on messaging
+- Change brand colors/fonts in one place
 
 **For Developers:**
 
@@ -208,12 +334,21 @@ Before committing code, ask yourself:
 - Easy to find things
 - Changes don't cascade unexpectedly
 - Less refactoring, more building
+- Centralized design system prevents inconsistencies
+
+**For Designers:**
+
+- Update brand colors once, applies everywhere
+- Change fonts globally with no code changes
+- Consistent look and feel guaranteed
+- Light/dark mode works automatically
 
 **For Everyone:**
 
 - Explicit code is maintainable code
 - Modular structure prevents spaghetti
 - Good organization scales with the team
+- Unified design system ensures quality
 
 ---
 
