@@ -120,7 +120,7 @@ This will:
 **After Stripe setup, use the dev tunnel script for webhook testing:**
 
 ```bash
-bash scripts/dev/dev_with_tunnel.sh -stripe
+bash scripts/dev/dev_with_tunnel.sh
 ```
 
 This will:
