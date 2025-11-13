@@ -473,7 +473,7 @@ update_env_file() {
     if ! grep -q "^#STRIPE_WEBHOOK_SECRET=" "$temp_file"; then
       printf "\n# Stripe Webhook Secret - Set this after configuring webhooks\n" >> "$temp_file"
       printf "# Option 1: Run 'stripe listen --forward-to localhost:3000/api/stripe/webhooks'\n" >> "$temp_file"
-      printf "# Option 2: Run 'bash scripts/dev/dev_with_tunnel.sh --stripe'\n" >> "$temp_file"
+      printf "# Option 2: Run 'bash scripts/dev/dev_with_tunnel.sh'\n" >> "$temp_file"
       printf "# Option 3: Create webhook at https://dashboard.stripe.com/test/webhooks\n" >> "$temp_file"
       printf "STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret\n" >> "$temp_file"
     fi

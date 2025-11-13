@@ -88,7 +88,6 @@ check_required_files() {
     "scripts/deploy/04_build_and_push_image/04_build_and_push_image.sh"
     "scripts/deploy/05_deploy_container_app/05_deploy_container_app.sh"
     "scripts/deploy/06_bind_secrets/06_bind_secrets.sh"
-    "scripts/deploy/07_get_connection_strings/07_get_connection_strings.sh"
     "scripts/deploy/99_cleanup_resources/99_cleanup_resources.sh"
   )
   
