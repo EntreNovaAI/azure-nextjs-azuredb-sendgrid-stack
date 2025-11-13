@@ -2,37 +2,6 @@
 
 🚀 **A production-ready starter template** for modern web applications with Azure cloud services.
 
-## 🌟 Features
-
-This template provides a complete, scalable foundation with:
-
-### Core Stack
-
-- **Next.js 16** with App Router
-- **React 19** for modern UI development
-- **NextAuth.js v4** for authentication (Google OAuth + Credentials)
-- **TypeScript** for type safety
-- **Kysely 0.28** query builder with Azure SQL Database
-- **Tailwind CSS v4** with Radix UI components
-
-### Azure Services
-
-- **Azure Container Apps** - Serverless container hosting
-- **Azure SQL Database** - Managed database
-- **Azure Key Vault** - Secure secret management
-- **Azure Blob Storage** - File storage
-- **Azure OpenAI** - AI capabilities
-- **Azure Web PubSub** - Real-time communication
-- **Application Insights** - Monitoring and telemetry
-
-### Integrations & Tools
-
-- **Stripe** payments integration with webhooks
-- **MailerSend** email service for transactional emails
-- **Docker** containerization
-- **Vitest** for unit and integration testing
-- **Playwright** for end-to-end testing
-
 ## 🚀 Quick Start
 
 ### 1. Clone the Repository
@@ -135,6 +104,8 @@ For complete setup and development workflow, follow the step-by-step guide:
 - **Coverage reporting**: Built-in code coverage tools
 
 ## 🚀 Deployment
+
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed deployment instructions and workflow.
 
 This template includes comprehensive deployment tooling for Azure:
 
