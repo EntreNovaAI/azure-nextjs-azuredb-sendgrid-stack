@@ -7,8 +7,8 @@
 // Primitive UI components (shadcn)
 export * from './ui'
 
-// Navigation components
-export * from './navigation'
+// Navbar components
+export * from './navbar'
 
 // Section components
 export * from './sections'

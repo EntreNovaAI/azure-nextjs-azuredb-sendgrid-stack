@@ -1,24 +1,24 @@
 'use client'
 
 import { signOut, useSession } from 'next-auth/react'
-import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { Button } from '@components/ui'
-import { getColors } from '@constants/colors'
 
 /**
  * Modern Login Button Component
  * Shows login/logout buttons based on authentication state
- * Uses shadcn Button components with theme-aware brand colors
- * Fully responsive with proper dark mode support
+ * Uses shadcn Button components with theme-aware styling via Tailwind
+ * Fully responsive with proper dark mode support via next-themes
+ * 
+ * Features:
+ * - Automatic light/dark mode via next-themes CSS variables
+ * - Clean, simple button states (loading, authenticated, unauthenticated)
+ * - Responsive text with mobile-friendly labels
+ * - Uses Tailwind utilities for all styling
  */
 export function LoginButton() {
   const { data: session, status } = useSession()
-  const { resolvedTheme } = useTheme()
   const router = useRouter()
-  
-  // Get theme-aware brand colors
-  const colors = getColors(resolvedTheme === 'dark')
 
   // Show loading state while session is being fetched
   if (status === 'loading') {
@@ -27,7 +27,7 @@ export function LoginButton() {
         variant="ghost" 
         size="default"
         disabled
-        className="whitespace-nowrap"
+        className="whitespace-nowrap bg-nav text-nav-pill"
       >
         <span className="hidden sm:inline">Loading...</span>
         <span className="sm:hidden">...</span>
@@ -38,16 +38,16 @@ export function LoginButton() {
   // Show logout button if user is authenticated
   if (session) {
     return (
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex items-center gap-2">
         {/* Welcome message - hidden on mobile */}
-        <p className="hidden sm:block text-sm text-muted-foreground">
-          Welcome, <strong className="text-foreground">{session.user?.name || session.user?.email}</strong>!
+        <p className="hidden lg:block text-sm text-nav-pill font-medium">
+          Welcome, <strong className="text-nav-hover">{session.user?.name || session.user?.email}</strong>!
         </p>
         <Button 
           variant="destructive"
           size="default"
           onClick={() => signOut()}
-          className="whitespace-nowrap"
+          className="whitespace-nowrap rounded-full font-semibold uppercase tracking-wide text-sm"
         >
           Sign Out
         </Button>
@@ -55,24 +55,13 @@ export function LoginButton() {
     )
   }
 
-  // Show modern CTA button with brand colors and proper dark mode support
+  // Show modern CTA button with theme-aware styling
+  // Uses Tailwind classes that automatically respond to dark mode
   return (
     <Button 
       size="default"
       onClick={() => router.push('/auth/signup')}
-      className="px-4 sm:px-8 font-bold whitespace-nowrap transition-all hover:scale-105 shadow-lg"
-      style={{
-        backgroundColor: colors.accent,
-        color: resolvedTheme === 'dark' ? colors.background : '#ffffff',
-        // Add hover effect via CSS variable
-        ['--hover-opacity' as string]: '0.9'
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.opacity = '0.9'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.opacity = '1'
-      }}
+      className="px-4 sm:px-8 font-bold whitespace-nowrap transition-all hover:scale-105 shadow-lg rounded-full bg-accent hover:bg-accent/90 text-accent-foreground uppercase tracking-wide text-sm"
     >
       <span className="hidden sm:inline">GET STARTED ⚡</span>
       <span className="sm:hidden">START ⚡</span>
