@@ -39,6 +39,9 @@
       "@ui/*": [
         "src/components/ui/*"
       ],
+      "@reactBits/*": [
+        "src/components/ui/reactBits/*"
+      ],
       "@app/*": [
         "app/*"
       ],

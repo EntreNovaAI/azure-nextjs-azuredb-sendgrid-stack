@@ -2,10 +2,8 @@
 
 import Link from 'next/link'
 import { Session } from 'next-auth'
-import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
 import { Button } from '@components/ui'
-import { getColors } from '@constants/colors'
+import DotGrid from '@reactBits/DotGrid'
 
 interface HeroSectionProps {
   title: string
@@ -48,8 +46,8 @@ export interface HeroContent {
  * HeroSection Component
  * Reusable hero section with authentication-aware content
  * Displays different messages and CTAs based on user authentication status
- * Uses centralized color system from @constants/colors
- * Implements mounted state to prevent hydration mismatches
+ * Uses Tailwind CSS custom properties that automatically adapt to light/dark mode
+ * DotGrid background automatically reads theme colors from CSS variables
  */
 export function HeroSection({
   title,
@@ -61,58 +59,64 @@ export function HeroSection({
   className = "text-center py-20 md:py-28"
 }: HeroSectionProps) {
   const content = session ? authenticatedContent : unauthenticatedContent
-  const { resolvedTheme } = useTheme()
-  // Track mounted state to prevent hydration mismatch
-  const [mounted, setMounted] = useState(false)
-  
-  // Set mounted to true after component mounts on client
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-  
-  // Use light theme as default during SSR and initial render to prevent hydration errors
-  const colors = getColors(mounted ? resolvedTheme === 'dark' : false)
   
   return (
-    <div className={className}>
-      {/* Title - large, bold, with brand gradient styling from colors.ts */}
-      <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold mb-6 leading-tight">
-        <span 
-          className="bg-gradient-to-r bg-clip-text text-transparent"
-          style={{
-            backgroundImage: `linear-gradient(to right, ${colors.primary}, ${colors.secondary}, ${colors.accent})`
-          }}
-        >
-          {title}
-        </span>
-      </h1>
-      <p className="text-lg md:text-xl lg:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed">
-        {subtitle}
-      </p>
+    /* 1. Main Wrapper: Needs 'relative' to act as the anchor for the absolute background */
+    <div className="relative w-full overflow-hidden h-full flex items-center justify-center">
       
-      {/* Message and CTA section */}
-      <div className="mb-8">
-        <p className="text-base md:text-lg mb-8 text-muted-foreground">
-          {session ? (
-            <>
-              Welcome back, <strong style={{ color: colors.primary }}>{session.user?.name || session.user?.email}</strong>! {content.message}
-            </>
-          ) : (
-            content.message
-          )}
+      {/* 2. Background Layer: Absolute positioned, full width/height, low z-index */}
+      <div className="absolute inset-0 z-0 w-full h-full">
+        {/* DotGrid background - automatically uses theme colors from CSS variables */}
+        <DotGrid
+          dotSize={5}
+          gap={15}
+          proximity={120}
+          shockRadius={150}
+          shockStrength={5}
+          resistance={750}
+          returnDuration={1.5}
+        />
+      </div>
+  
+      {/* 3. Content Layer: Relative positioned with higher z-index to sit ON TOP */}
+      <div className={`relative z-10 ${className}`}>
+        {/* Title with gradient using Tailwind's color-primary/secondary/accent */}
+        <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold mb-6 leading-tight">
+          <span 
+            className="bg-linear-to-r from-primary via-secondary to-accent bg-clip-text text-transparent"
+          >
+            {title}
+          </span>
+        </h1>
+        
+        {/* Subtitle using text-text from theme */}
+        <p className="text-lg md:text-xl lg:text-2xl mb-12 max-w-3xl mx-auto leading-relaxed opacity-80">
+          {subtitle}
         </p>
-        <Button 
-          asChild
-          size="lg"
-          className="hover:opacity-90 text-white font-bold shadow-lg hover:shadow-xl transition-all"
-          style={{
-            backgroundImage: `linear-gradient(to right, ${colors.primary}, ${colors.secondary}, ${colors.accent})`
-          }}
-        >
-          <Link href={content.buttonHref}>
-            {content.buttonText}
-          </Link>
-        </Button>
+        
+        {/* Message and CTA section */}
+        <div className="mb-8">
+          <p className="text-base md:text-lg mb-8 opacity-70">
+            {session ? (
+              <>
+                Welcome back, <strong className="text-primary font-bold">{session.user?.name || session.user?.email}</strong>! {content.message}
+              </>
+            ) : (
+              content.message
+            )}
+          </p>
+          
+          {/* CTA Button with gradient background using theme colors */}
+          <Button 
+            asChild
+            size="lg"
+            className="bg-linear-to-r from-primary via-secondary to-accent hover:opacity-90 text-white font-bold shadow-lg hover:shadow-xl transition-all"
+          >
+            <Link href={content.buttonHref}>
+              {content.buttonText}
+            </Link>
+          </Button>
+        </div>
       </div>
     </div>
   )

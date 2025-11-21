@@ -19,8 +19,8 @@ export function RootLayout({ children }: RootLayoutProps) {
       <body className={fontVariables}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="dark"
+          enableSystem={false}
           disableTransitionOnChange
         >
           {children}

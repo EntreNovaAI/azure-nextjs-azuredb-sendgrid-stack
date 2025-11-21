@@ -28,20 +28,20 @@
 @layer base {
   /* Light mode colors (default) */
   :root {
-    --theme-primary: #d53e82;
-    --theme-background: #ffffff;
-    --theme-text: #1e293b;
-    --theme-secondary: #000000;
-    --theme-accent: #8d4900;
+    --theme-primary: #FFBC4C;      /* Brand golden yellow - main actions */
+    --theme-background: #ffffff;    /* Clean white background */
+    --theme-text: #1a1a1a;         /* Almost black for readability */
+    --theme-secondary: #FFDE63;     /* Brand lighter yellow - highlights */
+    --theme-accent: #f59e0b;        /* Amber accent for hover states */
   }
   
   /* Dark mode colors - applied when .dark class is on html */
   .dark {
-    --theme-primary: #5fdfad;
-    --theme-background: #8aadff;
-    --theme-text: #f1f5f9;
-    --theme-secondary: #cbd5e1;
-    --theme-accent: #7000ba;
+    --theme-primary: #FFDE63;       /* Brand lighter yellow - pops on dark */
+    --theme-background: #0f172a;    /* Deep slate blue background */
+    --theme-text: #f8fafc;          /* Almost white for readability */
+    --theme-secondary: #FFBC4C;     /* Brand golden yellow - secondary */
+    --theme-accent: #fbbf24;        /* Brighter amber for dark mode */
   }
   
   /* Apply theme to body */

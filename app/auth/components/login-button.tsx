@@ -63,8 +63,8 @@ export function LoginButton() {
       onClick={() => router.push('/auth/signup')}
       className="px-4 sm:px-8 font-bold whitespace-nowrap transition-all hover:scale-105 shadow-lg rounded-full bg-accent hover:bg-accent/90 text-accent-foreground uppercase tracking-wide text-sm"
     >
-      <span className="hidden sm:inline">GET STARTED ⚡</span>
-      <span className="sm:hidden">START ⚡</span>
+      <span className="hidden sm:inline">SIGN IN/UP</span>
+      <span className="sm:hidden">SIGN IN/UP</span>
     </Button>
   )
 }
