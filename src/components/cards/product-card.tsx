@@ -3,9 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useState } from 'react'
-import { useTheme } from 'next-themes'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Button } from '@components/ui'
-import { getColors } from '@constants/colors'
 import { getUpgradePreviewAction, upgradeSubscriptionAction, scheduleDowngradeAction, createBillingPortalAction } from '@lib/stripe/stripe-actions'
 import { loadStripe } from '@stripe/stripe-js'
 import type { Product } from '@constants/products'
@@ -36,18 +34,21 @@ export function ProductCard({
   const router = useRouter()
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
-  const { resolvedTheme } = useTheme()
-  const colors = getColors(resolvedTheme === 'dark')
   
   // Variant-specific styling using dynamic colors
   const variantClasses = variant === 'default' ? 'border-border' : ''
   
   // Dynamic border and shadow colors based on variant
-  const borderStyle = variant === 'premium' 
-    ? { borderColor: `${colors.primary}80`, boxShadow: `0 4px 20px ${colors.primary}33, 0 0 40px ${colors.primary}66` }
-    : variant === 'basic'
-    ? { borderColor: `${colors.secondary}80`, boxShadow: `0 4px 20px ${colors.secondary}33, 0 0 40px ${colors.secondary}66` }
-    : {}
+  // Using Tailwind classes for theming support instead of inline styles
+  const getCardStyles = () => {
+    if (variant === 'premium') {
+      return 'border-primary/80 shadow-[0_4px_20px_rgba(var(--color-primary),0.2),0_0_40px_rgba(var(--color-primary),0.4)]'
+    }
+    if (variant === 'basic') {
+      return 'border-secondary/80 shadow-[0_4px_20px_rgba(var(--color-secondary),0.2),0_0_40px_rgba(var(--color-secondary),0.4)]'
+    }
+    return ''
+  }
   
   const isFree = finalPrice === 'Free'
   
@@ -222,31 +223,19 @@ export function ProductCard({
   
   return (
     <Card 
-      className={`relative overflow-hidden transition-all hover:scale-[1.02] ${variantClasses} flex flex-col h-full border`}
-      style={borderStyle}
+      className={`relative overflow-hidden transition-all hover:scale-[1.02] flex flex-col h-full border ${variantClasses} ${getCardStyles()}`}
     >
       {/* Gradient overlay for premium effect - uses dynamic colors */}
       {variant === 'premium' && (
-        <div 
-          className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl"
-          style={{ backgroundColor: `${colors.primary}33` }}
-        />
+        <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl bg-primary/20" />
       )}
       {variant === 'basic' && (
-        <div 
-          className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl"
-          style={{ backgroundColor: `${colors.secondary}33` }}
-        />
+        <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl bg-secondary/20" />
       )}
       
       {/* Premium badge or Current Plan badge - uses dynamic gradient with responsive positioning */}
       {variant === 'premium' && !isCurrentPlan && (
-        <div 
-          className="absolute top-2 right-2 lg:top-4 lg:right-4 text-white text-xs font-bold px-3 py-1 rounded-full z-10"
-          style={{
-            backgroundImage: `linear-gradient(to right, ${colors.primary}, ${colors.secondary})`
-          }}
-        >
+        <div className="absolute top-2 right-2 lg:top-4 lg:right-4 text-white text-xs font-bold px-3 py-1 rounded-full z-10 bg-linear-to-r from-primary to-secondary">
           POPULAR
         </div>
       )}
@@ -293,14 +282,13 @@ export function ProductCard({
         <Button 
           onClick={handlePurchase}
           disabled={loading || isCurrentPlan}
-          className="w-full hover:opacity-90"
-          style={
-            !loading && !isCurrentPlan && variant === 'premium' 
-              ? { backgroundImage: `linear-gradient(to right, ${colors.primary}, ${colors.secondary}, ${colors.primary})` }
+          className={`w-full hover:opacity-90 ${
+            !loading && !isCurrentPlan && variant === 'premium'
+              ? 'bg-linear-to-r from-primary via-secondary to-primary text-white'
               : !loading && !isCurrentPlan && variant === 'basic'
-              ? { backgroundImage: `linear-gradient(to right, ${colors.secondary}, ${colors.accent})` }
-              : undefined
-          }
+              ? 'bg-linear-to-r from-secondary to-accent text-white'
+              : ''
+          }`}
         >
           {loading ? (
             <>

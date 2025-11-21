@@ -6,6 +6,7 @@ import { Button } from '@components/ui'
 import DotGrid from '@reactBits/DotGrid'
 
 interface HeroSectionProps {
+  grid?: boolean
   title: string
   subtitle: string
   session: Session | null
@@ -50,6 +51,7 @@ export interface HeroContent {
  * DotGrid background automatically reads theme colors from CSS variables
  */
 export function HeroSection({
+  grid=true,
   title,
   subtitle,
   session,
@@ -67,7 +69,7 @@ export function HeroSection({
       {/* 2. Background Layer: Absolute positioned, full width/height, low z-index */}
       <div className="absolute inset-0 z-0 w-full h-full">
         {/* DotGrid background - automatically uses theme colors from CSS variables */}
-        <DotGrid
+        {grid && <DotGrid
           dotSize={5}
           gap={15}
           proximity={120}
@@ -75,7 +77,7 @@ export function HeroSection({
           shockStrength={5}
           resistance={750}
           returnDuration={1.5}
-        />
+        />}
       </div>
   
       {/* 3. Content Layer: Relative positioned with higher z-index to sit ON TOP */}

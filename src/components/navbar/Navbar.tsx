@@ -1,9 +1,8 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
 import { ThemeToggle } from '@components/shared'
-import { LoginButton } from '@auth/components'
 import PillNav, { type PillNavItem } from './_PillNav'
 
 /**
@@ -25,7 +24,7 @@ import PillNav, { type PillNavItem } from './_PillNav'
  * import { NavbarPillNav as Navbar } from '@layouts'
  */
 export function Navbar() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const pathname = usePathname()
 
   // Build navigation items based on auth state
@@ -46,8 +45,21 @@ export function Navbar() {
         label: 'Profile',
         href: '/profile',
         ariaLabel: 'Navigate to profile'
+      },
+      {
+        label: 'Sign Out',
+        href: '#',
+        ariaLabel: 'Sign out of your account',
+        onClick: () => signOut()
       }
-    ] : [])
+    ] : [
+      // Show Sign In only when NOT authenticated
+      {
+        label: 'Sign In/Up',
+        href: '/auth/signup',
+        ariaLabel: 'Sign in or create an account'
+      }
+    ])
   ]
 
   return (
@@ -59,7 +71,12 @@ export function Navbar() {
       initialLoadAnimation={true}
       rightSlot={
         <>
-          <LoginButton />
+          {/* Welcome message - hidden on mobile */}
+          {session && (
+            <p className="hidden lg:block text-sm text-muted-foreground font-medium mr-2">
+              Welcome, <strong className="text-primary">{session.user?.name || session.user?.email}</strong>!
+            </p>
+          )}
           <ThemeToggle />
         </>
       }

@@ -12,6 +12,7 @@ export type PillNavItem = {
   label: string;
   href: string;
   ariaLabel?: string;
+  onClick?: () => void; // Added optional onClick handler
 };
 
 /**
@@ -435,6 +436,7 @@ const PillNav: React.FC<PillNavThemedProps> = ({
                       aria-label={item.ariaLabel || item.label}
                       onMouseEnter={() => handleEnter(i)}
                       onMouseLeave={() => handleLeave(i)}
+                      onClick={item.onClick}
                     >
                       {PillContent}
                     </Link>
@@ -446,6 +448,12 @@ const PillNav: React.FC<PillNavThemedProps> = ({
                       aria-label={item.ariaLabel || item.label}
                       onMouseEnter={() => handleEnter(i)}
                       onMouseLeave={() => handleLeave(i)}
+                      onClick={(e) => {
+                        if (item.onClick) {
+                          e.preventDefault();
+                          item.onClick();
+                        }
+                      }}
                     >
                       {PillContent}
                     </a>
@@ -493,7 +501,10 @@ const PillNav: React.FC<PillNavThemedProps> = ({
                   <Link
                     href={item.href}
                     className={linkClasses}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      item.onClick?.();
+                    }}
                   >
                     {item.label}
                   </Link>
@@ -501,7 +512,13 @@ const PillNav: React.FC<PillNavThemedProps> = ({
                   <a
                     href={item.href}
                     className={linkClasses}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={(e) => {
+                      setIsMobileMenuOpen(false);
+                      if (item.onClick) {
+                        e.preventDefault();
+                        item.onClick();
+                      }
+                    }}
                   >
                     {item.label}
                   </a>
