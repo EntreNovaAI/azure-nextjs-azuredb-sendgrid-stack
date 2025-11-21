@@ -10,6 +10,8 @@ export * from './ui'
 // Navbar components
 export * from './navbar'
 
+export * from './footer'
+
 // Section components
 export * from './sections'
 

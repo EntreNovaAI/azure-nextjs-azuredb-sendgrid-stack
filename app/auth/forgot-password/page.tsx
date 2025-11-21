@@ -6,8 +6,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { AuthLayout } from '@/src/layouts'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label } from '@components/ui'
+import { MainLayout } from '@/src/layouts'
+import { Card, CardContent, Button, Input, Label } from '@components/ui'
 import { requestPasswordResetAction } from '@lib/auth/auth-actions'
 
 export default function ForgotPasswordPage() {
@@ -45,10 +45,12 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <AuthLayout>
-      <div className="space-y-6">
+    <MainLayout showFooter={false}
+    containerClass="flex min-h-[calc(100vh-6rem)] items-center justify-center">
+      {/* Center the card vertically and horizontally while keeping navbar/footer */}
+      <div className="w-full max-w-md space-y-6">
         {/* Header */}
-        <div className="text-center">
+        <div className="text-5xl md:text-7xl lg:text-8xl font-extrabold mb-6 leading-tight">
           <h1 className="text-3xl font-bold">Forgot Password</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Enter your email address and we'll send you a link to reset your password
@@ -124,6 +126,6 @@ export default function ForgotPasswordPage() {
           </CardContent>
         </Card>
       </div>
-    </AuthLayout>
+    </MainLayout>
   )
 }

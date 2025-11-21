@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth/next"
 import { redirect } from "next/navigation"
 import { getUserByEmail, createUser } from "@lib/kysely/repositories/user-repo"
 import { ProfileClient } from "./profile-client"
-
+import { AuthRequiredState } from '@components/shared'
 // Force dynamic rendering to prevent build-time errors
 // This ensures database secrets are only accessed at runtime, not during Docker build
 export const dynamic = 'force-dynamic'
@@ -18,9 +18,8 @@ export default async function ProfilePage() {
   
   // Redirect to home if not authenticated
   if (!session?.user?.email) {
-    redirect('/')
-    return // This prevents further execution in tests
-  }
+      return <AuthRequiredState message="Please sign in to access your dashboard." />
+    }// This prevents further execution in tests
 
   // Fetch user data from database including Stripe information
   const user = await getUserByEmail(session.user.email)

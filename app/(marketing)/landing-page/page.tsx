@@ -88,13 +88,13 @@ export default function LandingPage() {
       {/* Product Plans Section - anchor target for hero CTA */}
       <div id="plans" className="relative py-20 scroll-mt-20">
         {/* Subtle background gradient */}
-        <div className="absolute inset-0 bg-linear-to-b from-transparent via-muted/30 to-transparent"></div>
+        <div className="absolute inset-0 bg-linear-to-b from-transparent to-transparent"></div>
         
         <div className="relative max-w-[1200px] mx-auto px-4">
           <h2 className="text-4xl md:text-5xl font-bold text-center mb-6 bg-linear-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
             Choose Your Plan
           </h2>
-          <p className="text-lg md:text-xl text-muted-foreground text-center mb-16 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl opacity-70 text-center mb-16 max-w-2xl mx-auto">
             Select the perfect plan for your needs. All plans include secure payment processing and instant access.
           </p>
           
@@ -105,7 +105,7 @@ export default function LandingPage() {
               {products.map((product) => (
                 <div 
                   key={product.id} 
-                  className="h-[500px] bg-muted/30 rounded-lg animate-pulse"
+                  className="h-[500px] bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"
                 />
               ))}
             </div>
@@ -128,7 +128,7 @@ export default function LandingPage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
             Platform Features
           </h2>
-          <p className="text-lg text-muted-foreground text-center mb-12">
+          <p className="text-lg opacity-70 text-center mb-12">
             Everything you need to build and scale your business
           </p>
           <FeaturesSection features={heroFeatures} />
@@ -145,7 +145,7 @@ export default function LandingPage() {
           <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-linear-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
             Ready to Build?
           </h2>
-          <p className="text-xl text-muted-foreground mb-8">
+          <p className="text-xl opacity-70 mb-8">
             Stop configuring. Start shipping.
           </p>
           <Link href="/auth/signup">

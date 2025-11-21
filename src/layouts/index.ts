@@ -6,7 +6,6 @@
 
 export { RootLayout } from './root-layout'
 export { MainLayout } from './main-layout'
-export { AuthLayout } from './auth-layout'
-export { Footer } from './footer'
+export { Footer } from '../components/footer/footer'
 export { ThemeProvider } from './theme-provider'
 

@@ -51,7 +51,7 @@ export function ProductsGrid({
         {products.map((product) => (
           <div 
             key={product.id} 
-            className="h-[500px] bg-muted/30 rounded-lg animate-pulse"
+            className="h-[500px] bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"
             aria-label={`Loading ${product.title}`}
           />
         ))}

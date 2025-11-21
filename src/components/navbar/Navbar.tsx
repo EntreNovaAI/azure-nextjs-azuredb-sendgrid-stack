@@ -73,7 +73,7 @@ export function Navbar() {
         <>
           {/* Welcome message - hidden on mobile */}
           {session && (
-            <p className="hidden lg:block text-sm text-muted-foreground font-medium mr-2">
+            <p className="hidden lg:block text-sm opacity-70 font-medium mr-2">
               Welcome, <strong className="text-primary">{session.user?.name || session.user?.email}</strong>!
             </p>
           )}

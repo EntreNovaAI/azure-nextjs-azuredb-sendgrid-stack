@@ -4,4 +4,4 @@
  */
 
 export { HeroSection, type HeroContent } from './hero-section'
-
+export { LegalDocument } from './legal-document'
