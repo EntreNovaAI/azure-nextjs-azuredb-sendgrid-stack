@@ -18,7 +18,6 @@ interface ProductCardProps {
  * ProductCard Component
  * Reusable card component for displaying product/subscription tiers
  * Supports different styling variants and handles purchase flow
- * Uses centralized color system from @constants/colors
  * Now accepts a single product object for cleaner API
  */
 export function ProductCard({ 

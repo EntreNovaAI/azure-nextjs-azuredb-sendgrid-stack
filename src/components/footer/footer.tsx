@@ -77,7 +77,7 @@ export function Footer() {
 
         {/* Copyright */}
         <div className="text-center text-sm opacity-70">
-          <p>&copy; {currentYear} Azure Next Stack. All rights reserved.</p>
+          <p>&copy; {currentYear} [SaaS Company]. All rights reserved.</p>
         </div>
       </div>
     </footer>

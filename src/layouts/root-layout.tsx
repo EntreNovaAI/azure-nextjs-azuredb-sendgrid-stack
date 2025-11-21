@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
 import { ThemeProvider } from './theme-provider'
-import { fontVariables } from '@/src/lib/fonts/font-loader'
+
 
 interface RootLayoutProps {
   children: ReactNode
@@ -16,7 +16,7 @@ interface RootLayoutProps {
 export function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={fontVariables}>
+      <body>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
