@@ -81,7 +81,7 @@ export default function DashboardPage() {
       <div className="py-8">
         {/* Access Level Banner */}
         <Card className={`mb-8 ${
-          accessLevel === 'free' ? 'border-muted' :
+          accessLevel === 'free' ? 'border-gray-200 dark:border-gray-800' :
           accessLevel === 'basic' ? 'border-amber-400' :
           'border-violet-500'
         }`}>
@@ -93,7 +93,7 @@ export default function DashboardPage() {
                   {accessLevel === 'basic' && '⭐ Basic Version'}
                   {accessLevel === 'premium' && '🏢 Premium Version'}
                 </h2>
-                <p className="text-muted-foreground m-0">
+                <p className="opacity-70 m-0">
                   {accessLevel === 'free' && 'You have access to basic calculator functions'}
                   {accessLevel === 'basic' && 'You have access to memory functions and calculation history'}
                   {accessLevel === 'premium' && 'You have access to all advanced calculator features'}
@@ -101,7 +101,7 @@ export default function DashboardPage() {
               </div>
               {accessLevel !== 'premium' && (
                 <div className="text-right">
-                  <p className="m-0 text-sm text-muted-foreground">Want more features?</p>
+                  <p className="m-0 text-sm opacity-70">Want more features?</p>
                   <a href="#upgrade-section" className="inline-block px-3 py-2 rounded font-semibold bg-accent text-accent-foreground hover:bg-accent/80 transition">
                     Upgrade Now →
                   </a>
@@ -115,7 +115,7 @@ export default function DashboardPage() {
         <div className="mb-12">
           <div className="text-center mb-8">
             <h2 className="text-2xl mb-2">Calculator Demo</h2>
-            <p className="text-muted-foreground">Try our calculator with features based on your current access level</p>
+            <p className="opacity-70">Try our calculator with features based on your current access level</p>
           </div>
           
           <Calculator accessLevel={accessLevel} />
@@ -125,7 +125,7 @@ export default function DashboardPage() {
         <div id="upgrade-section" className="mb-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Upgrade Your Plan</h2>
-            <p className="text-muted-foreground">Unlock more calculator features with our premium plans</p>
+            <p className="opacity-70">Unlock more calculator features with our premium plans</p>
             
             {/* Display user information */}
             <UserInfo user={user} />
@@ -144,7 +144,7 @@ export default function DashboardPage() {
               {filteredProducts.map((product) => (
                 <div 
                   key={product.id} 
-                  className="h-[500px] bg-muted/30 rounded-lg animate-pulse"
+                  className="h-[500px] bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"
                 />
               ))}
             </div>

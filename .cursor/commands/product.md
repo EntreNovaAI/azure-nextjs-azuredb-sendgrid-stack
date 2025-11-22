@@ -29,6 +29,7 @@ Expert product page designer for SaaS apps. Build in `app/(product)` using the u
 ## Activation
 
 Present these options:
+
 1. Build a new product page
 2. Enhance an existing product page
 3. Build a dashboard or product feature
@@ -70,16 +71,21 @@ Design API → Create in `src/components/` or `src/product/[feature]/components/
 
 ### 3. Unified Color System
 
-- Import: `import { getColors } from '@/src/constants/colors'`
-- Use: `const colors = getColors(isDark)`
-- Available: `primary`, `secondary`, `accent`, `background`, `text`, `textSecondary`
-- Apply: `style={{ color: colors.primary }}`
-- Check `@/src/constants/colors.ts` for all properties
+- Colors are defined in `src/styles/globals.css` using CSS variables
+- Use Tailwind classes for theme-aware colors (automatically adapts to light/dark mode)
+- Available Tailwind classes: `bg-primary`, `text-primary`, `bg-secondary`, `text-secondary`, `bg-accent`, `text-accent`, `bg-background`, `text-text`
+- Apply: `className="bg-primary text-white"` or `className="text-primary"`
+- For inline styles with CSS variables: `style={{ color: 'var(--color-primary)' }}`
+- Colors automatically switch between light/dark mode via `next-themes`
 
 ### 4. Fonts (Already Configured)
 
-- Don't import fonts - configured globally in `src/lib/fonts/font-loader.ts`
+- Don't import fonts - configured globally in `src/layouts/root-layout.tsx` and `src/styles/globals.css`
+- Fonts are loaded via Next.js font optimization and applied via CSS variables
 - Use semantic HTML and Tailwind classes
+- Main font (body): `Inter` - applied automatically
+- Heading font (h1-h6): `Space Grotesk` - applied automatically
+- Monospace font (code): `JetBrains Mono` - applied automatically
 
 ### 5. shadcn Components
 
@@ -97,8 +103,10 @@ Design API → Create in `src/components/` or `src/product/[feature]/components/
 ### 7. Theme Awareness
 
 - Use `'use client'` for: theme awareness, interactions, browser APIs, React hooks
-- Import `useTheme` from 'next-themes'
-- Implement mounted state to prevent hydration errors
+- Colors automatically adapt to light/dark mode via Tailwind classes (no need for `useTheme` for colors)
+- Use Tailwind classes: `bg-primary`, `text-primary`, `bg-background`, `text-text` - they automatically switch themes
+- For dynamic theme detection: Import `useTheme` from 'next-themes' and implement mounted state to prevent hydration errors
+- CSS variables in `globals.css` handle theme switching automatically via `next-themes`
 
 ### 8. File Structure (CRITICAL)
 
@@ -109,6 +117,7 @@ src/product/feature-name/
   ├── data/           # Constants, configs
   └── utils/          # Utilities, helpers
 ```
+
 **Rule:** Logic in `src/`, pages in `app/`. Pages should be thin composition layers.
 
 ## Example Page Structure
@@ -117,10 +126,7 @@ src/product/feature-name/
 'use client'
 
 import { MainLayout } from '@/src/layouts'
-import { getColors } from '@/src/constants/colors'
 import { Button, Card } from '@/src/components/ui'
-import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
 
 // Content Dictionary - MANDATORY
 const content = {
@@ -134,31 +140,28 @@ const content = {
 }
 
 export default function AnalyticsPage() {
-  // Theme awareness
-  const { resolvedTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => { setMounted(true) }, [])
-  const colors = getColors(mounted ? resolvedTheme === 'dark' : false)
-
   return (
     <MainLayout>
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 style={{ color: colors.primary }}>{content.title}</h1>
-        <p className="text-foreground/70">{content.subtitle}</p>
+        {/* Use Tailwind classes - automatically theme-aware */}
+        <h1 className="text-primary text-4xl font-bold mb-4">{content.title}</h1>
+        <p className="text-text/70">{content.subtitle}</p>
         
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-6 mt-8">
           {content.metrics.map((m, i) => (
-            <Card key={i}>
-              <div>{m.label}</div>
-              <div className="text-3xl">{m.value}</div>
-              <div style={{ color: m.change.startsWith('+') ? colors.secondary : colors.accent }}>
+            <Card key={i} className="p-6">
+              <div className="text-text/70 mb-2">{m.label}</div>
+              <div className="text-3xl font-bold text-text">{m.value}</div>
+              {/* Use Tailwind classes for theme-aware colors */}
+              <div className={m.change.startsWith('+') ? 'text-secondary' : 'text-accent'}>
                 {m.change}
               </div>
             </Card>
           ))}
         </div>
         
-        <Button style={{ backgroundColor: colors.accent }}>
+        {/* Button uses theme colors automatically via shadcn variants */}
+        <Button className="mt-8 bg-accent hover:bg-accent/90">
           {content.ctaText}
         </Button>
       </div>
@@ -207,7 +210,7 @@ export default function ComponentName(props: Props) {
 
 ### Option 1: Build New Page
 
-Collect info → Create logic in `src/product/[feature]/` → Create page in `app/(product)/[name]/page.tsx` → Mark with `'use client'`/`'use server'` → Add content dictionary → Use MainLayout + getColors() + shadcn → Import from `src/` → Test themes & responsiveness
+Collect info → Create logic in `src/product/[feature]/` → Create page in `app/(product)/[name]/page.tsx` → Mark with `'use client'`/`'use server'` → Add content dictionary → Use MainLayout + Tailwind theme classes + shadcn → Import from `src/` → Test themes & responsiveness
 
 ### Option 2: Enhance Existing
 
@@ -232,12 +235,12 @@ Design API → Create in `src/components/` → Mark explicitly → Add content d
 **Standard Checks:**
 
 - ✅ Uses `MainLayout` wrapper
-- ✅ Uses `getColors()` for theme-aware colors
+- ✅ Uses Tailwind theme classes (`bg-primary`, `text-primary`, etc.) for theme-aware colors
 - ✅ Uses existing shadcn components
 - ✅ Includes helpful comments
 - ✅ Responsive (mobile, tablet, desktop)
 - ✅ Works in light and dark mode
-- ✅ No hardcoded colors
+- ✅ No hardcoded colors (use Tailwind classes or CSS variables)
 - ✅ Clean, modular code
 - ✅ Proper TypeScript types
 - ✅ Accessible (semantic HTML, ARIA)
@@ -247,10 +250,10 @@ Design API → Create in `src/components/` → Mark explicitly → Add content d
 1. **Be explicit - ALWAYS** - Mark with `'use client'`/`'use server'`. No exceptions.
 2. **Separate concerns** - Logic in `src/`, pages in `app/`. Ask: "Useful elsewhere?" → `src/`
 3. **Content dictionaries mandatory** - Never hardcode text in JSX
-4. **Use unified color system** - Never use `#FF0000` or `text-blue-500`. Use `getColors()` or Tailwind theme classes
-5. **Fonts already configured** - Don't import fonts, they're global
+4. **Use unified color system** - Never use `#FF0000` or `text-blue-500`. Use Tailwind theme classes (`bg-primary`, `text-primary`, `bg-accent`, etc.) or CSS variables (`var(--color-primary)`) All the available colors are in globals.css
+5. **Fonts already configured** - Don't import fonts, they're configured globally in `root-layout.tsx` and `globals.css`
 6. **Build on existing** - Check `@/src/components/ui` first
-7. **Theme awareness critical** - Test both light and dark modes
+7. **Theme awareness critical** - Colors automatically adapt via Tailwind classes. Test both light and dark modes.
 8. **Think modular** - Create reusable components in `src/`
 9. **Keep it simple** - Clean, readable code over clever code
 10. **Comment your code** - Clear, simple language in short sentences

@@ -159,41 +159,41 @@ export function ProfileClient({ user }: ProfileClientProps) {
   }
 
   return (
-    <MainLayout>
-      <div className="max-w-[800px] mx-auto py-8">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-2">My Profile</h1>
-          <p className="text-muted-foreground">Manage your account information and subscription</p>
+    <MainLayout navbarOverlay={false}>
+      <div className="max-w-[800px] mx-auto py-4 px-4 sm:py-8 sm:px-6">
+        <div className="text-center mb-6 sm:mb-12">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">My Profile</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Manage your account information and subscription</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* User Information Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Account Information</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Account Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-start gap-8">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-8">
                 {/* Profile Image */}
                 {user.image && (
                   <div className="shrink-0">
-                    <img src={user.image} alt="Profile" className="w-20 h-20 rounded-full object-cover border-4 border-border" />
+                    <img src={user.image} alt="Profile" className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 sm:border-4 border-border" />
                   </div>
                 )}
                 
                 {/* User Details */}
-                <div className="flex-1 space-y-4">
-                  <div className="flex justify-between items-center py-2 border-b">
-                    <label className="font-semibold min-w-[120px]">Name:</label>
-                    <span className="text-muted-foreground">{user.name || 'Not provided'}</span>
+                <div className="flex-1 w-full space-y-3 sm:space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b gap-1 sm:gap-0">
+                    <label className="font-semibold text-sm sm:text-base">Name:</label>
+                    <span className="text-sm sm:text-base text-muted-foreground break-words">{user.name || 'Not provided'}</span>
                   </div>
-                  <div className="flex justify-between items-center py-2 border-b">
-                    <label className="font-semibold min-w-[120px]">Email:</label>
-                    <span className="text-muted-foreground">{user.email}</span>
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b gap-1 sm:gap-0">
+                    <label className="font-semibold text-sm sm:text-base">Email:</label>
+                    <span className="text-sm sm:text-base text-muted-foreground break-all">{user.email}</span>
                   </div>
-                  <div className="flex justify-between items-center py-2">
-                    <label className="font-semibold min-w-[120px]">Member Since:</label>
-                    <span className="text-muted-foreground">{formatDate(user.createdAt)}</span>
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 gap-1 sm:gap-0">
+                    <label className="font-semibold text-sm sm:text-base">Member Since:</label>
+                    <span className="text-sm sm:text-base text-muted-foreground">{formatDate(user.createdAt)}</span>
                   </div>
                 </div>
               </div>
@@ -203,37 +203,38 @@ export function ProfileClient({ user }: ProfileClientProps) {
           {/* Subscription Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Subscription Details</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Subscription Details</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4 mb-6">
-                <div className="flex justify-between items-center py-2 border-b">
-                  <label className="font-semibold min-w-[120px]">Current Plan:</label>
-                  <span className={`font-semibold capitalize ${getPlanStatusColor(user.accessLevel)}`}>
+              <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b gap-1 sm:gap-0">
+                  <label className="font-semibold text-sm sm:text-base">Current Plan:</label>
+                  <span className={`text-sm sm:text-base font-semibold capitalize ${getPlanStatusColor(user.accessLevel)}`}>
                     {formatAccessLevel(user.accessLevel)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center py-2">
-                  <label className="font-semibold min-w-[120px]">Last Updated:</label>
-                  <span className="text-muted-foreground">{formatDate(user.updatedAt)}</span>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 gap-1 sm:gap-0">
+                  <label className="font-semibold text-sm sm:text-base">Last Updated:</label>
+                  <span className="text-sm sm:text-base text-muted-foreground">{formatDate(user.updatedAt)}</span>
                 </div>
               </div>
 
               {/* Manage Subscription Section */}
               {user.accessLevel !== 'free' && user.stripeCustomerId && (
-                <div className="pt-6 border-t">
-                  <h3 className="font-semibold mb-2">Manage Subscription</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
+                <div className="pt-4 sm:pt-6 border-t">
+                  <h3 className="font-semibold text-base sm:text-lg mb-2">Manage Subscription</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-4">
                     You are currently subscribed to the {formatAccessLevel(user.accessLevel)}. 
                     You can update your payment method or cancel your subscription below.
                     {user.accessLevel === 'premium' && ' We also offer a more affordable Basic plan option.'}
                   </p>
                   
-                  <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                     <Button 
                       onClick={handleUpdatePaymentMethod}
                       disabled={isPortalLoading}
                       variant="outline"
+                      className="w-full sm:w-auto text-sm sm:text-base"
                     >
                       {isPortalLoading ? 'Opening Portal...' : 'Update Payment Method'}
                     </Button>
@@ -242,13 +243,14 @@ export function ProfileClient({ user }: ProfileClientProps) {
                       onClick={handleUnsubscribe}
                       disabled={isUnsubscribing}
                       variant="destructive"
+                      className="w-full sm:w-auto text-sm sm:text-base"
                     >
                       {isUnsubscribing ? 'Processing...' : 'Cancel Subscription'}
                     </Button>
                   </div>
                   
                   {unsubscribeStatus && (
-                    <div className={`mt-4 p-4 rounded text-sm whitespace-pre-line ${
+                    <div className={`mt-4 p-3 sm:p-4 rounded text-xs sm:text-sm whitespace-pre-line ${
                       unsubscribeStatus.includes('✓') || unsubscribeStatus.includes('Redirect') 
                         ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20' 
                         : 'bg-destructive/10 text-destructive border border-destructive/20'
@@ -261,9 +263,9 @@ export function ProfileClient({ user }: ProfileClientProps) {
 
               {/* Free Plan Message */}
               {user.accessLevel === 'free' && (
-                <div className="pt-6 border-t">
-                  <h3 className="font-semibold mb-2">Free Plan</h3>
-                  <p className="text-sm text-muted-foreground">
+                <div className="pt-4 sm:pt-6 border-t">
+                  <h3 className="font-semibold text-base sm:text-lg mb-2">Free Plan</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     You are currently on the free plan. {' '}
                     <Link href="/landing-page" className="text-primary font-semibold hover:underline">
                       Upgrade to a paid plan
@@ -278,13 +280,14 @@ export function ProfileClient({ user }: ProfileClientProps) {
           {/* Account Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Account Actions</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Account Actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                 <Button 
                   onClick={() => signOut({ callbackUrl: '/' })}
                   variant="outline"
+                  className="w-full sm:w-auto text-sm sm:text-base"
                 >
                   Sign Out
                 </Button>

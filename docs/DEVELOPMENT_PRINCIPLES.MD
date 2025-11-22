@@ -138,9 +138,9 @@ return (
 
 ### Fonts - Globally Configured
 
-**All fonts are configured in `src/lib/fonts/font-loader.ts`**
+**All fonts are configured in `src/layouts/root-layout.tsx` and `src/styles/globals.css`**
 
-Fonts are loaded once and applied globally. No need to import fonts in individual components.
+Fonts are loaded once via Next.js font optimization and applied globally. No need to import fonts in individual components.
 
 ```typescript
 // ✅ Good - Fonts already applied globally
@@ -165,15 +165,15 @@ export default function MyPage() {
 ```
 
 **Why?**
-- Change fonts in one place (`src/lib/fonts/font-loader.ts`)
-- Update `src/constants/fonts.ts` to document the change
+- Change fonts in two places: `src/layouts/root-layout.tsx` (font loading) and `src/styles/globals.css` (font mapping)
 - Fonts load once, not in every component
 - Consistent typography across the app
 - Better performance (no duplicate font loads)
+- Next.js automatically optimizes and self-hosts fonts
 
 **To change a font:**
-1. Edit `src/lib/fonts/font-loader.ts` - change the import and loader
-2. Edit `src/constants/fonts.ts` - update documentation
+1. Edit `src/layouts/root-layout.tsx` - change the font import and loader (e.g., `Inter` → `Roboto`)
+2. Edit `src/styles/globals.css` - update the CSS variable references in the `@theme` section
 3. Restart dev server
 4. Done! Font applies everywhere automatically
 

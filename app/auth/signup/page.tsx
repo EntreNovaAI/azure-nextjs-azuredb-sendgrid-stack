@@ -7,13 +7,11 @@
 import { useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useTheme } from 'next-themes'
 import Link from 'next/link'
-import { AuthLayout } from '@/src/layouts'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Separator } from '@components/ui'
+import { MainLayout } from '@/src/layouts'
+import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label, Separator } from '@components/ui'
 import { PasswordInput } from '@components/auth'
 import { registerUserAction } from '@lib/auth/auth-actions'
-import { getColors } from '@constants/colors'
 
 // Component that uses useSearchParams - must be wrapped in Suspense
 function SignUpContent() {
@@ -31,11 +29,7 @@ function SignUpContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/'
-  const { resolvedTheme } = useTheme()
   
-  // Get colors based on current theme for consistent branding
-  const colors = getColors(resolvedTheme === 'dark')
-
   // Handle Google OAuth sign-in
   const handleGoogleSignIn = () => {
     signIn('google', { callbackUrl })
@@ -91,22 +85,20 @@ function SignUpContent() {
   }
 
   return (
-    <AuthLayout showBackLink={false}>
-      <div className="space-y-6">
-        {/* Header - uses brand primary color for emphasis */}
-        <div className="text-center">
-          <h1 
-            className="text-3xl font-bold" 
-            style={{ color: colors.primary }}
-          >
-            Welcome!
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Choose how you'd like to get started
-          </p>
-        </div>
+    <MainLayout showFooter={false}>
+      <div className="flex min-h-[calc(100vh-100px)] flex-col items-center justify-center py-12">
+        <div className="w-full max-w-md space-y-6">
+          {/* Header - uses brand primary color for emphasis */}
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-primary">
+              Welcome!
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Choose how you'd like to get started
+            </p>
+          </div>
 
-        {!selectedMethod ? (
+          {!selectedMethod ? (
           /* Method Selection */
           <Card>
             <CardHeader>
@@ -117,18 +109,8 @@ function SignUpContent() {
               <Button
                 onClick={handleGoogleSignIn}
                 variant="outline"
-                className="w-full transition-all duration-200"
+                className="w-full transition-all duration-200 hover:bg-primary/10"
                 size="lg"
-                style={{
-                  // Apply subtle brand color on hover
-                  ['--hover-bg' as string]: `${colors.primary}10`
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = `${colors.primary}10`
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = ''
-                }}
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                   <path
@@ -162,18 +144,8 @@ function SignUpContent() {
               {/* Email Option - primary shadcn Button styled with brand colors */}
               <Button
                 onClick={() => setSelectedMethod('email')}
-                className="w-full"
+                className="w-full bg-primary text-black hover:opacity-90"
                 size="lg"
-                style={{
-                  backgroundColor: colors.primary,
-                  color: resolvedTheme === 'dark' ? colors.text : '#ffffff'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = '0.9'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = '1'
-                }}
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
@@ -245,32 +217,14 @@ function SignUpContent() {
 
                 {/* Error message - uses brand accent color */}
                 {error && (
-                  <div 
-                    className="p-3 rounded-md text-sm font-medium"
-                    style={{
-                      backgroundColor: `${colors.accent}15`,
-                      borderWidth: '1px',
-                      borderStyle: 'solid',
-                      borderColor: `${colors.accent}40`,
-                      color: colors.accent
-                    }}
-                  >
+                  <div className="p-3 rounded-md text-sm font-medium bg-accent/15 border border-accent/40 text-accent">
                     {error}
                   </div>
                 )}
 
                 {/* Success message - uses brand secondary color */}
                 {success && (
-                  <div 
-                    className="p-3 rounded-md text-sm font-medium"
-                    style={{
-                      backgroundColor: `${colors.secondary}15`,
-                      borderWidth: '1px',
-                      borderStyle: 'solid',
-                      borderColor: `${colors.secondary}40`,
-                      color: colors.secondary
-                    }}
-                  >
+                  <div className="p-3 rounded-md text-sm font-medium bg-secondary/15 border border-secondary/40 text-secondary">
                     {success}
                   </div>
                 )}
@@ -279,17 +233,7 @@ function SignUpContent() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full"
-                  style={{
-                    backgroundColor: isLoading ? `${colors.primary}70` : colors.primary,
-                    color: resolvedTheme === 'dark' ? colors.text : '#ffffff'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isLoading) e.currentTarget.style.opacity = '0.9'
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isLoading) e.currentTarget.style.opacity = '1'
-                  }}
+                  className="w-full bg-primary text-black hover:opacity-90 disabled:opacity-70"
                 >
                   {isLoading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
                 </Button>
@@ -338,8 +282,9 @@ function SignUpContent() {
             ← Back to Home
           </Link>
         </div>
+        </div>
       </div>
-    </AuthLayout>
+    </MainLayout>
   )
 }
 
@@ -347,14 +292,14 @@ function SignUpContent() {
 export default function SignUpPage() {
   return (
     <Suspense fallback={
-      <AuthLayout showBackLink={false}>
+      <MainLayout showFooter={false}>
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
           </div>
         </div>
-      </AuthLayout>
+      </MainLayout>
     }>
       <SignUpContent />
     </Suspense>

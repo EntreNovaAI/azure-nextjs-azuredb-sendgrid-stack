@@ -4,4 +4,3 @@
  */
 
 export { AuthProvider } from './auth-provider'
-export { LoginButton } from './login-button'

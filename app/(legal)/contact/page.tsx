@@ -1,9 +1,7 @@
 'use client'
 
-import { useTheme } from 'next-themes'
 import { MainLayout } from '@/src/layouts'
 import { Button, Card, CardContent, Input, Label, Separator } from '@components/ui'
-import { getColors } from '@constants/colors'
 
 /**
  * Contact Page (Template)
@@ -11,9 +9,6 @@ import { getColors } from '@constants/colors'
  * This is non-functional by default; wire it to your API or email service as needed.
  */
 export default function ContactPage() {
-  const { resolvedTheme } = useTheme()
-  const colors = getColors(resolvedTheme === 'dark')
-
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault()
     // Implement submission to your API/email service (e.g., SendGrid) here.
@@ -22,16 +17,11 @@ export default function ContactPage() {
   }
 
   return (
-    <MainLayout>
-      <div className="py-12">
+    <MainLayout navbarOverlay={false}>
+      <div className="pb-12 pt-12 md:pt-12">
         {/* Page header with brand gradient */}
         <div className="max-w-3xl mx-auto mb-6 text-center">
-          <h1
-            className="text-4xl md:text-5xl font-bold bg-gradient-to-r bg-clip-text text-transparent"
-            style={{
-              backgroundImage: `linear-gradient(to right, ${colors.primary}, ${colors.secondary}, ${colors.accent})`,
-            }}
-          >
+          <h1 className="text-4xl md:text-5xl font-bold bg-linear-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
             Contact
           </h1>
           <p className="text-sm text-muted-foreground mt-2">
@@ -86,5 +76,3 @@ export default function ContactPage() {
     </MainLayout>
   )
 }
-
-
