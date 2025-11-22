@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Session } from 'next-auth'
 import { Button } from '@components/ui'
 import DotGrid from '@reactBits/DotGrid'
+import { ShinyText } from '@reactBits/ShinyText'
 
 interface HeroSectionProps {
   grid?: boolean
@@ -79,16 +80,19 @@ export function HeroSection({
           returnDuration={1.5}
         />}
       </div>
+
+      {/* 2.5. Rounded square background - positioned between dots and text for readability */}
+      <div className="absolute inset-0 z-5 flex items-center justify-center px-4 md:px-0">
+        <div className="w-full md:w-1/3 max-w-5xl h-[50vh] rounded-3xl bg-background/80 backdrop-blur-sm border border-primary/50 shadow-2xl"></div>
+      </div>
   
       {/* 3. Content Layer: Relative positioned with higher z-index to sit ON TOP */}
       <div className={`relative z-10 ${className}`}>
-        {/* Title with gradient using Tailwind's color-primary/secondary/accent */}
+        {/* Title with shiny text animation */}
         <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold mb-6 leading-tight">
-          <span 
-            className="bg-linear-to-r from-primary via-secondary to-accent bg-clip-text text-transparent"
-          >
+          <ShinyText>
             {title}
-          </span>
+          </ShinyText>
         </h1>
         
         {/* Subtitle using text-text from theme */}

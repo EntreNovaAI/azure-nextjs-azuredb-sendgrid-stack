@@ -340,7 +340,7 @@ const PillNav: React.FC<PillNavThemedProps> = ({
             ref={el => {
               logoRef.current = el;
             }}
-            className="w-[42px] h-[42px] rounded-full p-2 inline-flex items-center justify-center overflow-hidden bg-primary transition-colors duration-200"
+            className="w-[42px] h-[42px] rounded-full p-2 inline-flex items-center justify-center overflow-hidden transition-colors duration-200"
           >
             <img 
               src={logo} 
@@ -357,7 +357,7 @@ const PillNav: React.FC<PillNavThemedProps> = ({
             ref={el => {
               logoRef.current = el;
             }}
-            className="w-[42px] h-[42px] rounded-full p-2 inline-flex items-center justify-center overflow-hidden bg-primary transition-colors duration-200"
+            className="w-[42px] h-[42px] rounded-full p-2 inline-flex items-center justify-center overflow-hidden transition-colors duration-200"
           >
             <img 
               src={logo} 

@@ -5,9 +5,10 @@
 
 /* Tailwind v4 Theme Configuration */
 @theme {
-  /* Fonts */
-  --font-family-main: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-family-secondary: 'Space Mono', monospace;
+  /* Fonts - Use CSS variables from Next.js font optimization */
+  --font-family-main: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-family-heading: var(--font-space-grotesk), system-ui, -apple-system, sans-serif;
+  --font-family-mono: var(--font-jetbrains-mono), 'Courier New', monospace;
   
   /* Colors - All use CSS variables that change with dark mode */
   --color-primary: var(--theme-primary);
@@ -50,10 +51,15 @@
     font-family: var(--font-family-main);
   }
   
-  /* Headings use secondary font */
+  /* Headings use heading font */
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-family-secondary);
+    font-family: var(--font-family-heading);
     @apply font-bold;
+  }
+  
+  /* Code blocks use monospace font */
+  code, pre {
+    font-family: var(--font-family-mono);
   }
   
   /* Smooth transitions for theme switching */
@@ -63,5 +69,15 @@
   
   html {
     scroll-behavior: smooth;
+  }
+
+  /* Shiny text animation for hero titles */
+  @keyframes shiny {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
   }
 }

@@ -68,7 +68,7 @@ export default function LandingPage() {
 
 
   return (
-    <MainLayout>
+    <MainLayout navbarOverlay={true}>
       <HeroSection
       grid={false}
         title={homeHeroContent.title}

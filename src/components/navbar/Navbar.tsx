@@ -3,7 +3,7 @@
 import { useSession, signOut } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
 import { ThemeToggle } from '@components/shared'
-import PillNav, { type PillNavItem } from './_PillNav'
+import PillNav, { type PillNavItem } from '../ui/reactBits/PillNav'
 
 /**
  * Navbar with PillNav Component
@@ -71,11 +71,13 @@ export function Navbar() {
       initialLoadAnimation={true}
       rightSlot={
         <>
-          {/* Welcome message - hidden on mobile */}
+          {/* Welcome message - hidden on mobile, with background matching pill nav */}
           {session && (
-            <p className="hidden lg:block text-sm opacity-70 font-medium mr-2">
-              Welcome, <strong className="text-primary">{session.user?.name || session.user?.email}</strong>!
-            </p>
+            <div className="hidden lg:flex items-center h-[42px] px-4 rounded-full bg-secondary mr-2">
+              <p className="text-sm font-medium text-background">
+                Welcome, <strong className="text">{session.user?.name || session.user?.email}</strong>!
+              </p>
+            </div>
           )}
           <ThemeToggle />
         </>

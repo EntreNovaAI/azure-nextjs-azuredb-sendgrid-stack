@@ -33,7 +33,7 @@ export default function Home() {
   const { data: session } = useSession()
 
   return (
-    <MainLayout containerClass="">
+    <MainLayout containerClass="" navbarOverlay={true}>
       <div className="min-h-screen">
         {/* Hero Section - with gradient and glow effects using brand colors */}
         <div className="relative">

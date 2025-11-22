@@ -12,7 +12,7 @@ export default function TermsOfServicePage() {
   const lastUpdated = new Date().toLocaleDateString()
 
   return (
-    <MainLayout>
+    <MainLayout navbarOverlay={false}>
       <LegalDocument
         title="Terms of Service"
         lastUpdated={lastUpdated}

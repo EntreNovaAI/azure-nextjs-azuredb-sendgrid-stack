@@ -18,13 +18,13 @@ export function Footer() {
           {/* Brand Section */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">🚀</span>
+              <span className="text-2xl">[LOGO]</span>
               <h3 className="text-lg font-bold bg-linear-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-                Azure Next Stack
+                [SaaS]
               </h3>
             </div>
             <p className="text-sm opacity-70">
-              Secure subscription platform with Azure integration
+              [SLOGAN]
             </p>
           </div>
 

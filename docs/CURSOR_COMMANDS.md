@@ -28,8 +28,8 @@ Then follow the step-by-step instructions provided.
 - Customizing brand appearance
 
 **What It Does:**
-- Updates color system in `src/constants/colors.ts`
-- Changes fonts by modifying `src/constants/fonts.ts` and `src/lib/fonts/font-loader.ts`
+- Updates color system in `src/styles/globals.css`
+- Changes fonts by modifying `src/layouts/root-layout.tsx` (font loading) and `src/styles/globals.css` (font mapping)
 - Ensures consistent theming across all components
 - Validates accessibility and contrast
 
@@ -265,8 +265,8 @@ const colors = getColors(mounted ? resolvedTheme === 'dark' : false)
 All commands make it easy to customize later:
 
 - **Content** - Update content dictionaries
-- **Colors** - Change in `src/constants/colors.ts`
-- **Fonts** - Update in `src/constants/fonts.ts`
+- **Colors** - Change in `src/styles/globals.css`
+- **Fonts** - Update in `src/layouts/root-layout.tsx` and `src/styles/globals.css`
 - **Components** - Extend or compose existing shadcn components
 
 ---

@@ -20,7 +20,7 @@ interface LegalDocumentProps {
  */
 export function LegalDocument({ title, lastUpdated, content }: LegalDocumentProps) {
   return (
-    <div className="pb-12 pt-24 md:pt-32">
+    <div className="pb-12 pt-12 md:pt-12">
       {/* Page header with brand gradient */}
       <div className="max-w-3xl mx-auto mb-6 text-center">
         <h1 className="text-4xl md:text-5xl font-bold bg-linear-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">

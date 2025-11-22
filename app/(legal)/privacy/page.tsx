@@ -13,7 +13,7 @@ export default function PrivacyPolicyPage() {
   const lastUpdated = new Date().toLocaleDateString()
 
   return (
-    <MainLayout>
+    <MainLayout navbarOverlay={false}>
       <LegalDocument
         title="Privacy Policy"
         lastUpdated={lastUpdated}
