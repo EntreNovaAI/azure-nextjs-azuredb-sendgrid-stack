@@ -1,10 +1,38 @@
+// @ts-check
+/// <reference types="node" />
 import { defineConfig } from 'vitest/config'
+// @ts-ignore - Package has types but TypeScript can't resolve in .mts context
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from 'vite-tsconfig-paths'
+import path from 'path'
  
 export default defineConfig({
-  plugins: [tsconfigPaths(), react()],
+  plugins: [
+    tsconfigPaths({
+      projects: ['./tsconfig.test.json']
+    }),
+    react()
+  ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './'),
+      '@src': path.resolve(__dirname, './src'),
+      '@lib': path.resolve(__dirname, './src/lib'),
+      '@components': path.resolve(__dirname, './src/components'),
+      '@ui': path.resolve(__dirname, './src/components/ui'),
+      '@reactBits': path.resolve(__dirname, './src/components/ui/reactBits'),
+      '@constants': path.resolve(__dirname, './src/constants'),
+      '@app': path.resolve(__dirname, './app'),
+      '@auth': path.resolve(__dirname, './app/auth'),
+      '@api': path.resolve(__dirname, './app/(api)/api'),
+      '@dashboard': path.resolve(__dirname, './app/(product)/dashboard'),
+      // Mock server-only package for tests
+      'server-only': path.resolve(__dirname, './vitest.setup.ts'),
+    },
+  },
   test: {
+    // Exclude E2E tests - these are run with Playwright, not Vitest
+    exclude: ['**/tests/e2e/**/*.spec.ts', '**/node_modules/**', '**/.next/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
