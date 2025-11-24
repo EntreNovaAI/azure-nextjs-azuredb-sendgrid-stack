@@ -28,7 +28,7 @@ For complete setup and development workflow, follow the step-by-step guide:
 - **Next.js 16.0.1** - React framework with App Router
 - **React 19.2.0** - UI library with latest features
 - **TypeScript 5.9.3** - Type-safe development
-- **Tailwind CSS 4.1.16** - Utility-first CSS framework
+- **Tailwind CSS 4.1.17** - Utility-first CSS framework
 - **Radix UI** - Accessible component primitives
 - **Lucide React** - Beautiful icon library
 
@@ -36,26 +36,26 @@ For complete setup and development workflow, follow the step-by-step guide:
 
 - **NextAuth.js 4.24.13** - Authentication framework
 - **Kysely 0.28.8** - Type-safe SQL query builder
-- **Tedious 18.6.1** - Azure SQL Database driver
+- **Tedious 19.1.3** - Azure SQL Database driver
 - **Tarn 3.0.2** - Connection pooling
 
 ### Integrations
 
-- **Stripe 19.1.0** - Payment processing
+- **Stripe 20.0.0** - Payment processing
 - **MailerSend 2.6.0** - Transactional emails
-- **Zod 4.1.12** - Schema validation
-- **Axios 1.13.1** - HTTP client
+- **Zod 4.1.13** - Schema validation
+- **Axios 1.13.2** - HTTP client
 
 ### Azure SDKs
 
 - **@azure/identity 4.13.0** - Azure authentication
 - **@azure/storage-blob 12.29.1** - Blob storage
 - **@azure/web-pubsub 1.2.0** - Real-time messaging
-- **@azure/app-configuration 1.9.0** - Configuration management
+- **@azure/app-configuration 1.10.0** - Configuration management
 
 ### Testing
 
-- **Vitest 4.0.5** - Unit and integration testing
+- **Vitest 4.0.13** - Unit and integration testing
 - **Playwright** - End-to-end testing
 - **@testing-library/react 16.3.0** - React component testing
 - **@vitest/coverage-v8** - Code coverage reporting
