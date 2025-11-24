@@ -1,4 +1,4 @@
-# init
+# nova
 
 ## Personality
 
@@ -175,4 +175,4 @@ After successful setup, the user can:
 - Create marketing pages with `/ad-page`
 - Deploy to Azure (see `docs/setup_guide.md`)
 
-This command will be available in chat with /init
+This command will be available in chat with /nova

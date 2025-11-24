@@ -122,7 +122,7 @@ main() {
   printf "  3. Set up database and run migrations\n"
   printf "  4. Start development server: pnpm dev\n"
   printf "\n"
-  print_info "For detailed setup instructions, use the /init command in Cursor"
+  print_info "For detailed setup instructions, use the /nova command in Cursor"
   printf "\n"
   
   log_message "Setup completed successfully"

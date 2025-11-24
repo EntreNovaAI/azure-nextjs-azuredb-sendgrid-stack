@@ -10,7 +10,7 @@ This guide walks you through setting up your local development environment from 
 
 ### Run the Setup Command
 
-In Cursor, use the `/init` command. This will guide you through the entire setup process automatically.
+In Cursor, use the `/nova` command. This will guide you through the entire setup process automatically.
 
 **The AI will check if you have your database ready before running migrations.**
 
@@ -49,7 +49,7 @@ Once installed, open SSMS and:
 
 **4. Add database credentials to `.env.local`**
 
-The `/init` command creates `.env.local` for you. Add your database info:
+The `/nova` command creates `.env.local` for you. Add your database info:
 
 ```env
 MSSQL_HOST=localhost
@@ -64,7 +64,7 @@ MSSQL_ENCRYPT=false
 
 ---
 
-### What the `/init` Command Does
+### What the `/nova` Command Does
 
 The AI will guide you through running these scripts in order:
 
@@ -319,7 +319,7 @@ When building new features, follow this workflow:
 
 This project includes specialized AI commands to streamline development:
 
-- `/init` - Project setup and initialization
+- `/nova` - Project setup and initialization
 - `/product` - Build product pages and features
 - `/ad-page` - Create marketing pages
 - `/landing-page` - Update the main landing page
@@ -358,4 +358,4 @@ See [DEVELOPMENT_PRINCIPLES.md](DEVELOPMENT_PRINCIPLES.MD) for:
 
 ---
 
-**Need help?** The `/init` command in Cursor will walk you through each step with detailed guidance!
+**Need help?** The `/nova` command in Cursor will walk you through each step with detailed guidance!

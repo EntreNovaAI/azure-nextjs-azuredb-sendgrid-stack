@@ -8,12 +8,12 @@ Cursor commands are AI-powered assistants that help you build and configure spec
 
 ## Available Commands
 
-### 🚀 `/init` - Project Initialization
+### 🚀 `/nova` - Project Initialization
 **Purpose:** Set up the project for local development from a fresh git clone.
 
 **Example Usage:**
 ```
-/init
+/nova
 ```
 Then follow the step-by-step instructions provided.
 

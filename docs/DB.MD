@@ -141,7 +141,7 @@ This is expected! Lazy initialization prevents build-time connections. Everythin
 Check `.env.local` (development) or Azure Key Vault secrets (production).
 
 **Tables don't exist?**  
-Run `bash scripts/dev/02_db_setup.sh` to execute migrations (or manually: `pnpm dlx tsx kysely/migration-script.ts`). In development mode, /init should handle this automatically.
+Run `bash scripts/dev/02_db_setup.sh` to execute migrations (or manually: `pnpm dlx tsx kysely/migration-script.ts`). In development mode, /nova should handle this automatically.
 
 ---
 
