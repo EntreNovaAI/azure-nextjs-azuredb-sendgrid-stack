@@ -80,7 +80,6 @@
     "**/*.spec.ts",
     "**/*.spec.tsx",
     "tests/**/*",
-    "vitest.config.mts",
     "vitest.setup.ts",
     "playwright.config.ts",
     "coverage/**/*"

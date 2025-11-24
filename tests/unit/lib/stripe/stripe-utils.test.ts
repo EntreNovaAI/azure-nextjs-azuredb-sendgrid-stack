@@ -3,6 +3,7 @@
  * Specifically testing credit card number detection in customer names
  */
 
+import { describe, it, expect } from 'vitest'
 import { looksLikeCreditCardNumber, sanitizeCustomerName } from '@lib/stripe/stripe-utils'
 
 describe('looksLikeCreditCardNumber', () => {
