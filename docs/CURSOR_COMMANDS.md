@@ -62,7 +62,7 @@ Choose option 1 (colors) or 2 (fonts), then provide your preferences.
 **Key Features:**
 
 - Always uses `MainLayout` for consistent structure
-- Leverages unified color system with `getColors()`
+- Leverages unified color system with Tailwind classes and CSS variables
 - Content dictionary pattern separates content from code
 - Uses existing shadcn components
 - Works in both light and dark modes
@@ -148,7 +148,7 @@ All commands follow these core principles:
 ### 🎯 Consistency First
 - Every command uses the unified design system
 - MainLayout for structure
-- `getColors()` for theme-aware colors
+- Tailwind classes (`bg-primary`, `text-primary`, etc.) and CSS variables for theme-aware colors
 - shadcn components for UI elements
 
 ### 📝 Content Dictionary Pattern
@@ -159,10 +159,10 @@ All commands follow these core principles:
 
 ### 🌓 Theme Awareness
 
-- All components work in light and dark modes
-- Uses `useTheme()` hook for theme detection
-- Prevents hydration errors with mounted state
-- Colors adapt automatically
+- All components work in light and dark modes automatically
+- Uses Tailwind classes (`bg-primary`, `text-text`) or CSS variables (`var(--color-primary)`)
+- Colors adapt automatically via CSS - no JavaScript needed for most cases
+- No hydration errors - CSS handles theme switching seamlessly
 
 ### 📱 Mobile-First
 
@@ -211,9 +211,8 @@ app/
 'use client' // For interactive/theme-aware components
 
 import { MainLayout } from '@/src/layouts'
-import { getColors } from '@/src/constants/colors'
 import { Button, Card } from '@/src/components/ui'
-import { useTheme } from 'next-themes'
+// Colors are handled via Tailwind classes - no import needed!
 ```
 
 ### Content Dictionary Pattern
@@ -231,15 +230,44 @@ const content = {
 
 ### Theme Awareness
 
+Colors automatically adapt to light/dark mode via CSS variables. No JavaScript needed for most cases!
+
 ```typescript
+// ✅ Preferred - Tailwind classes automatically adapt to theme
+<div className="bg-background text-text">
+  <button className="bg-primary hover:bg-accent">
+    Theme-aware button
+  </button>
+</div>
+```
+
+```typescript
+// ✅ Alternative - CSS variables for inline styles (if needed)
+<div style={{ 
+  backgroundColor: 'var(--color-background)',
+  color: 'var(--color-text)'
+}}>
+  Theme-aware content
+</div>
+```
+
+```typescript
+// ⚠️ Advanced - Only use useTheme() for setting theme or reading values for Canvas/SVG
+// Most components should use Tailwind classes or CSS variables instead!
+
+// Example: Theme toggle (setting theme)
+import { useTheme } from 'next-themes'
+
+const { setTheme } = useTheme()
+<button onClick={() => setTheme('dark')}>Switch theme</button>
+
+// Example: Reading theme for Canvas API (advanced - rarely needed)
 const { resolvedTheme } = useTheme()
-const [mounted, setMounted] = useState(false)
-
 useEffect(() => {
-  setMounted(true)
-}, [])
-
-const colors = getColors(mounted ? resolvedTheme === 'dark' : false)
+  const themeColor = getComputedStyle(document.documentElement)
+    .getPropertyValue('--theme-primary').trim()
+  // Use themeColor for canvas drawing, etc.
+}, [resolvedTheme])
 ```
 
 ## Best Practices

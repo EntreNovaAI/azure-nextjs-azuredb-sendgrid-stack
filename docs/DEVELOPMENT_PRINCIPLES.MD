@@ -96,19 +96,23 @@ export default function LandingPage() {
 
 ### Colors - One Source of Truth
 
-**All colors must be defined in `src/constants/colors.ts`**
+**All colors are defined in `src/styles/globals.css` using CSS variables**
 
-This ensures consistent branding across the entire application and makes theme updates trivial.
+This ensures consistent branding across the entire application and makes theme updates trivial. Colors automatically adapt to light/dark mode via `next-themes`.
 
 ```typescript
-// ✅ Good - Uses centralized color system
-import { getColors } from '@/src/constants/colors'
-
-const { resolvedTheme } = useTheme()
-const colors = getColors(resolvedTheme === 'dark')
-
+// ✅ Good - Uses Tailwind classes (automatically theme-aware)
 return (
-  <button style={{ backgroundColor: colors.accent }}>
+  <button className="bg-primary text-white hover:bg-accent">
+    Click me
+  </button>
+)
+```
+
+```typescript
+// ✅ Good - Uses CSS variables for inline styles
+return (
+  <button style={{ backgroundColor: 'var(--color-primary)' }}>
     Click me
   </button>
 )
@@ -124,26 +128,37 @@ return (
 ```
 
 **Why?**
-- Change brand colors in one place, updates everywhere
-- Automatic light/dark mode support
+- Change brand colors in one place (`globals.css`), updates everywhere
+- Automatic light/dark mode support via `next-themes`
+- No JavaScript needed - pure CSS solution
 - No color inconsistencies across pages
 - Marketing can update branding without touching code
 
-**Available colors:**
-- `primary` - Main brand color
-- `secondary` - Supporting elements
-- `accent` - CTAs and highlights
-- `background` / `backgroundAlt` - Page backgrounds
-- `text` / `textSecondary` - Text colors
+**Available Tailwind classes:**
+- `bg-primary` / `text-primary` - Main brand color
+- `bg-secondary` / `text-secondary` - Supporting elements
+- `bg-accent` / `text-accent` - CTAs and highlights
+- `bg-background` / `text-text` - Page backgrounds and text
+
+**Available CSS variables:**
+- `var(--color-primary)` or `var(--theme-primary)` - Main brand color
+- `var(--color-secondary)` or `var(--theme-secondary)` - Supporting elements
+- `var(--color-accent)` or `var(--theme-accent)` - CTAs and highlights
+- `var(--color-background)` or `var(--theme-background)` - Page background
+- `var(--color-text)` or `var(--theme-text)` - Text color
+
+**To change colors:** 
+- Use the `/style` command in Cursor for guided color updates
+- Or manually edit `src/styles/globals.css` - modify the `:root` section for light mode and `.dark` section for dark mode
 
 ### Fonts - Globally Configured
 
-**All fonts are configured in `src/layouts/root-layout.tsx` and `src/styles/globals.css`**
+**All fonts are configured in `src/styles/globals.css` using CSS variables**
 
-Fonts are loaded once via Next.js font optimization and applied globally. No need to import fonts in individual components.
+Fonts are loaded via Next.js font optimization in `src/layouts/root-layout.tsx` and applied globally through CSS variables in `globals.css`. No need to import fonts in individual components.
 
 ```typescript
-// ✅ Good - Fonts already applied globally
+// ✅ Good - Fonts already applied globally via CSS
 export default function MyPage() {
   return (
     <div>
@@ -165,53 +180,139 @@ export default function MyPage() {
 ```
 
 **Why?**
-- Change fonts in two places: `src/layouts/root-layout.tsx` (font loading) and `src/styles/globals.css` (font mapping)
+- Fonts are configured in `globals.css` using CSS variables (similar to colors)
+- Integrated with next-themes for consistent theming
 - Fonts load once, not in every component
 - Consistent typography across the app
 - Better performance (no duplicate font loads)
 - Next.js automatically optimizes and self-hosts fonts
 
-**To change a font:**
-1. Edit `src/layouts/root-layout.tsx` - change the font import and loader (e.g., `Inter` → `Roboto`)
-2. Edit `src/styles/globals.css` - update the CSS variable references in the `@theme` section
-3. Restart dev server
-4. Done! Font applies everywhere automatically
+**Available font CSS variables:**
+- `var(--font-family-main)` - Main body font (applied to `body`)
+- `var(--font-family-heading)` - Heading font (applied to `h1-h6`)
+- `var(--font-family-mono)` - Monospace font (applied to `code`, `pre`)
+
+**To change fonts:**
+- Use the `/style` command in Cursor for guided font updates
+- Or manually:
+  1. Edit `src/layouts/root-layout.tsx` - change the font import and loader (e.g., `Inter` → `Roboto`)
+  2. Edit `src/styles/globals.css` - update the CSS variable references in the `@theme` section
+  3. Restart dev server
+  4. Done! Font applies everywhere automatically
 
 ### Theme Awareness Pattern
 
 **When building theme-aware components:**
 
+Colors automatically adapt to light/dark mode via CSS variables. No JavaScript needed for most cases!
+
 ```typescript
+// ✅ Good - Tailwind theme classes automatically adapt to theme
 'use client'
 
-import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
-import { getColors } from '@/src/constants/colors'
+export default function ThemedComponent() {
+  return (
+    <div className="bg-background text-text">
+      <button className="bg-primary hover:bg-accent">
+        Adapts to light/dark mode automatically
+      </button>
+    </div>
+  )
+}
+```
+
+```typescript
+// ✅ Good - Tailwind dark: modifier for specific dark mode styles
+'use client'
 
 export default function ThemedComponent() {
-  // Get current theme
-  const { resolvedTheme } = useTheme()
-  
-  // Prevent hydration mismatch
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-  
-  // Get theme-aware colors
-  const colors = getColors(mounted ? resolvedTheme === 'dark' : false)
-  
   return (
-    <div style={{ color: colors.primary }}>
+    <div className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+      Uses different colors for light and dark modes
+    </div>
+  )
+}
+```
+
+```typescript
+// ✅ Good - CSS variables for inline styles (if needed)
+'use client'
+
+export default function ThemedComponent() {
+  return (
+    <div style={{ 
+      backgroundColor: 'var(--color-background)',
+      color: 'var(--color-text)'
+    }}>
       Adapts to light/dark mode automatically
     </div>
   )
 }
 ```
 
+```typescript
+// ✅ Good - Using useTheme() to set theme (like ThemeToggle)
+'use client'
+
+import { useTheme } from 'next-themes'
+
+export function ThemeToggle() {
+  const { setTheme } = useTheme()
+  
+  return (
+    <button onClick={() => setTheme('dark')}>
+      Switch to dark mode
+    </button>
+  )
+}
+```
+
+```typescript
+// ⚠️ Advanced - Only needed for Canvas, SVG, or dynamic color calculations
+// Most components should use Tailwind classes or CSS variables instead!
+'use client'
+
+import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
+
+export default function AdvancedThemedComponent() {
+  const { resolvedTheme } = useTheme()
+  const [colors, setColors] = useState({ primary: '#FFBC4C' })
+  
+  useEffect(() => {
+    // Only use this if you need actual color values for Canvas API, SVG, or calculations
+    // Canvas can't use CSS variables directly - needs actual color strings
+    const themeColor = getComputedStyle(document.documentElement)
+      .getPropertyValue('--theme-primary').trim()
+    
+    setColors({ primary: themeColor || '#FFBC4C' })
+    
+    // Example: Use in canvas drawing
+    const ctx = canvasRef.current?.getContext('2d')
+    if (ctx) {
+      ctx.fillStyle = colors.primary
+      // ... draw with theme color
+    }
+  }, [resolvedTheme])
+  
+  return <canvas ref={canvasRef} />
+}
+```
+
+**When you might need this (advanced cases only):**
+- **Canvas API** - Canvas can't use CSS variables directly, needs actual color values
+- **SVG manipulation** - When setting SVG attributes dynamically in JavaScript
+- **Color calculations** - Converting hex to RGB, calculating gradients programmatically
+- **Third-party libraries** - Libraries that require actual color values, not CSS variables
+
+**Note:** 99% of components should use Tailwind classes (`bg-primary`) or CSS variables (`var(--color-primary)`) instead. Only use this pattern when you absolutely need JavaScript color values.
+
 **Benefits:**
-- Colors automatically adapt to theme
-- No hydration errors
-- Consistent theme behavior
-- Works with system preferences
+- Colors automatically adapt to theme via CSS
+- No hydration errors (CSS handles theme switching)
+- Consistent theme behavior across all components
+- Works with system preferences automatically
+- Simpler code - no need for mounted state guards
 
 ---
 
@@ -311,7 +412,7 @@ Before committing code, ask yourself:
 - [ ] Is it clear if this is a client or server component?
 - [ ] Is the logic in `src/` and the page in `app/`?
 - [ ] Is marketing text in a content object at the top?
-- [ ] Are colors using `getColors()` from `@/src/constants/colors`?
+- [ ] Are colors using Tailwind classes (`bg-primary`, `text-primary`, etc.) or CSS variables (`var(--color-primary)`)?
 - [ ] Are fonts relying on global config (not imported in component)?
 - [ ] Would this be easy to change in 6 months?
 - [ ] Is it modular and focused on one thing?
