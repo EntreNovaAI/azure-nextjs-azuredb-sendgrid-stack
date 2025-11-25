@@ -9,6 +9,10 @@
     },
     "stripe": {
       "url": "https://mcp.stripe.com"
+    },
+    "next-devtools": {
+      "command": "npx",
+      "args": ["-y", "next-devtools-mcp@latest"]
     }
   }
 }
