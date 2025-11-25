@@ -103,6 +103,20 @@ For complete setup and development workflow, follow the step-by-step guide:
 - **E2E tests**: Playwright for full user flow testing
 - **Coverage reporting**: Built-in code coverage tools
 
+### Security
+
+- **Security headers**: Production-ready headers configured by default
+  - **X-Frame-Options**: Prevents clickjacking attacks
+  - **X-Content-Type-Options**: Prevents MIME type sniffing
+  - **Content-Security-Policy**: Restricts resource loading (allows Stripe & Application Insights)
+  - **Referrer-Policy**: Controls referrer information leakage
+  - **Permissions-Policy**: Restricts browser API access (camera, microphone, geolocation)
+- **SQL injection protection**: Kysely's parameterized queries prevent SQL injection
+- **Password security**: bcrypt hashing for password storage
+- **Session security**: NextAuth JWT with secure cookies
+- **Rate limiting**: Built-in protection for checkout endpoints
+- **Input validation**: Zod schemas for type-safe validation
+
 ## 🚀 Deployment
 
 See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed deployment instructions and workflow.
