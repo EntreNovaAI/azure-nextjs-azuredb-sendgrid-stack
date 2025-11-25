@@ -1,16 +1,16 @@
 {
   "mcpServers": {
-    "shadcn": {
+    "project-shadcn": {
       "command": "npx",
       "args": [
         "shadcn@latest",
         "mcp"
       ]
     },
-    "stripe": {
+    "project-stripe": {
       "url": "https://mcp.stripe.com"
     },
-    "next-devtools": {
+    "project-next-devtools": {
       "command": "npx",
       "args": ["-y", "next-devtools-mcp@latest"]
     }
