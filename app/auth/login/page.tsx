@@ -1,5 +1,5 @@
-// Comprehensive sign-up page with authentication method selection
-// Users can choose between email/password registration or Google OAuth
+// Comprehensive login page with authentication method selection
+// Users can choose between email/password login or Google OAuth
 // Integrated with centralized color system for consistent branding
 
 'use client'
@@ -11,15 +11,13 @@ import Link from 'next/link'
 import { MainLayout } from '@/src/layouts'
 import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label, Separator } from '@components/ui'
 import { PasswordInput } from '@components/auth'
-import { registerUserAction } from '@lib/auth/auth-actions'
 
 // Component that uses useSearchParams - must be wrapped in Suspense
-function SignUpContent() {
+function LoginContent() {
   // State management for form and UI
-  const [showEmailForm, setShowEmailForm] = useState(false) // Toggle between method selection and email form
+  const [selectedMethod, setSelectedMethod] = useState<'email' | 'google' | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -42,26 +40,20 @@ function SignUpContent() {
     setSuccess('')
 
     try {
-      // Handle registration via Server Action
-      const result = await registerUserAction(email, password, name || undefined)
+      // Handle login with NextAuth credentials provider
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      })
 
-      if (result.success) {
-        setSuccess('Account created successfully! Redirecting to login...')
-        // Clear form fields
-        setEmail('')
-        setPassword('')
-        setName('')
-        // Redirect to login page after a short delay
+      if (result?.error) {
+        setError('Invalid email or password')
+      } else if (result?.ok) {
+        setSuccess('Login successful! Redirecting...')
         setTimeout(() => {
-          router.push(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)
-        }, 1500)
-      } else {
-        // Handle error response
-        if (result.details && Array.isArray(result.details)) {
-          setError(result.details.join(', '))
-        } else {
-          setError(result.error || 'Registration failed')
-        }
+          router.push(callbackUrl)
+        }, 1000)
       }
     } catch (err) {
       console.error('Authentication error:', err)
@@ -78,21 +70,21 @@ function SignUpContent() {
           {/* Header - uses brand primary color for emphasis */}
           <div className="text-center">
             <h1 className="text-3xl font-bold text-primary">
-              Create your account
+              Welcome Back!
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Get started with your free account today
+              Sign in to your account to continue
             </p>
           </div>
 
-          {!showEmailForm ? (
-          /* Method Selection - Standard SaaS pattern */
+          {!selectedMethod ? (
+          /* Method Selection */
           <Card>
             <CardHeader>
-              <CardTitle className="text-center">Sign Up</CardTitle>
+              <CardTitle className="text-center">Sign In</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Google OAuth Option - Primary authentication method */}
+              {/* Google OAuth Option - uses shadcn Button with brand colors on hover */}
               <Button
                 onClick={handleGoogleSignIn}
                 variant="outline"
@@ -128,11 +120,10 @@ function SignUpContent() {
                 </div>
               </div>
 
-              {/* Email Option - Shows email form when clicked */}
+              {/* Email Option - primary shadcn Button styled with brand colors */}
               <Button
-                onClick={() => setShowEmailForm(true)}
-                variant="outline"
-                className="w-full transition-all duration-200 hover:bg-primary/10"
+                onClick={() => setSelectedMethod('email')}
+                className="w-full bg-primary text-black hover:opacity-90"
                 size="lg"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,20 +132,7 @@ function SignUpContent() {
                 Continue with Email
               </Button>
 
-              {/* Link to login page - Standard SaaS pattern */}
-              <div className="pt-2 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Already have an account?{' '}
-                  <Link
-                    href={`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Sign in
-                  </Link>
-                </p>
-              </div>
-
-              <p className="text-xs text-center text-muted-foreground pt-2">
+              <p className="text-xs text-center text-muted-foreground">
                 By continuing, you agree to our{' '}
                 <Link href="/terms" className="underline hover:text-foreground">Terms of Service</Link>
                 {' '}and{' '}
@@ -166,18 +144,13 @@ function SignUpContent() {
           /* Email Form */
           <Card>
             <CardHeader>
-              <div className="relative flex items-center justify-center">
-                <CardTitle className="text-center">Create Account</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Sign In</CardTitle>
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => {
-                    setShowEmailForm(false)
-                    setError('')
-                    setSuccess('')
-                  }}
+                  onClick={() => setSelectedMethod(null)}
                   aria-label="Go back to method selection"
-                  className="absolute right-0"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -200,18 +173,6 @@ function SignUpContent() {
                   />
                 </div>
 
-                {/* Name field */}
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name (Optional)</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-                    placeholder="Your Name"
-                  />
-                </div>
-
                 {/* Password field with visibility toggle */}
                 <PasswordInput
                   id="password"
@@ -219,7 +180,7 @@ function SignUpContent() {
                   value={password}
                   onChange={setPassword}
                   required
-                  showHint={true}
+                  showHint={false}
                 />
 
                 {/* Error message - uses brand accent color */}
@@ -242,19 +203,29 @@ function SignUpContent() {
                   disabled={isLoading}
                   className="w-full bg-primary text-black hover:opacity-90 disabled:opacity-70"
                 >
-                  {isLoading ? 'Creating Account...' : 'Create Account'}
+                  {isLoading ? 'Signing in...' : 'Sign In'}
                 </Button>
               </form>
 
-              {/* Link to login page - Standard SaaS pattern */}
+              {/* Forgot password link */}
+              <div className="mt-4 text-center">
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Forgot your password?
+                </Link>
+              </div>
+
+              {/* Link to signup - Standard SaaS pattern */}
               <div className="mt-6 text-center">
                 <p className="text-sm text-muted-foreground">
-                  Already have an account?{' '}
+                  Don't have an account?{' '}
                   <Link
-                    href={`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+                    href={`/auth/signup?callbackUrl=${encodeURIComponent(callbackUrl)}`}
                     className="text-primary hover:underline font-medium"
                   >
-                    Sign in
+                    Sign up
                   </Link>
                 </p>
               </div>
@@ -278,7 +249,7 @@ function SignUpContent() {
 }
 
 // Main page component with Suspense boundary
-export default function SignUpPage() {
+export default function LoginPage() {
   return (
     <Suspense fallback={
       <MainLayout showFooter={false}>
@@ -290,7 +261,8 @@ export default function SignUpPage() {
         </div>
       </MainLayout>
     }>
-      <SignUpContent />
+      <LoginContent />
     </Suspense>
   )
 }
+

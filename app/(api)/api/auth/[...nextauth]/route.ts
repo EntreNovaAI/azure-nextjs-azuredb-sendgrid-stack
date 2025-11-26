@@ -80,7 +80,7 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   // v4 specific configuration
   pages: {
-    signIn: '/auth/signin',
+    signIn: '/auth/login',
     signOut: '/auth/signout',
     error: '/auth/error',
   },
