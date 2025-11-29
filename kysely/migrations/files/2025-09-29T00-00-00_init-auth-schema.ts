@@ -78,7 +78,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     BEGIN
       CREATE TABLE dbo.[Session] (
         id            NVARCHAR(100) NOT NULL PRIMARY KEY,
-        sessionToken  NVARCHAR(255) NOT NULL,
+        sessionToken  NVARCHAR(500) NOT NULL,
         userId        NVARCHAR(100) NOT NULL,
         expires       DATETIME2      NOT NULL,
         CONSTRAINT UQ_Session_SessionToken UNIQUE (sessionToken),
