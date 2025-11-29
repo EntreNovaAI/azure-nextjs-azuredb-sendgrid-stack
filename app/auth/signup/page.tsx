@@ -15,19 +15,22 @@ import { registerUserAction } from '@lib/auth/auth-actions'
 
 // Component that uses useSearchParams - must be wrapped in Suspense
 function SignUpContent() {
+  // Router and search params hooks
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get('callbackUrl') || '/'
+  // Check if request is coming from mobile app
+  const isFromMobile = searchParams.get('source') === 'mobile'
+  
   // State management for form and UI
-  const [showEmailForm, setShowEmailForm] = useState(false) // Toggle between method selection and email form
+  // If coming from mobile, skip method selection and show email form directly
+  const [showEmailForm, setShowEmailForm] = useState(isFromMobile)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  
-  // Router and search params hooks
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callbackUrl') || '/'
   
   // Handle Google OAuth sign-in
   const handleGoogleSignIn = () => {
@@ -46,15 +49,24 @@ function SignUpContent() {
       const result = await registerUserAction(email, password, name || undefined)
 
       if (result.success) {
-        setSuccess('Account created successfully! Redirecting to login...')
         // Clear form fields
         setEmail('')
         setPassword('')
         setName('')
-        // Redirect to login page after a short delay
-        setTimeout(() => {
-          router.push(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)
-        }, 1500)
+        
+        // If coming from mobile app, redirect to mobile success page
+        // Otherwise redirect to login page as usual
+        setSuccess('Account created successfully! Redirecting...')
+        if (isFromMobile) {
+          setTimeout(() => {
+            router.push('/auth/mobile')
+          }, 1500)
+        } else {
+          // Redirect to login page after a short delay
+          setTimeout(() => {
+            router.push(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)
+          }, 1500)
+        }
       } else {
         // Handle error response
         if (result.details && Array.isArray(result.details)) {
